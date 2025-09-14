@@ -43,7 +43,7 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::on_execBtn_clicked() {
-    if (tfRootFolder == "") {
+    if (tfRootFolder == "" || tfRootFolder.isEmpty()) {
         QMessageBox::critical(this, "Error!", tr("You have to select a root folder!\nFile -> Set TF2 Root Folder"));
         return;
     }
