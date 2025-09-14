@@ -35,42 +35,57 @@
    <set>QMainWindow::DockOption::AllowTabbedDocks|QMainWindow::DockOption::AnimatedDocks</set>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="execBtn">
+   <widget class="QWidget" name="horizontalLayoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>520</y>
-      <width>92</width>
-      <height>26</height>
+      <width>168</width>
+      <height>28</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Execute</string>
-    </property>
-    <property name="flat">
-     <bool>false</bool>
-    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QPushButton" name="execBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Execute</string>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="clearBtn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Clear</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
-   <widget class="QPushButton" name="clearBtn">
+   <widget class="QFrame" name="gridFrame">
     <property name="geometry">
      <rect>
-      <x>110</x>
-      <y>520</y>
-      <width>92</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Clear</string>
-    </property>
-   </widget>
-   <widget class="QListView" name="listView">
-    <property name="geometry">
-     <rect>
-      <x>690</x>
-      <y>10</y>
-      <width>221</width>
-      <height>501</height>
+      <x>10</x>
+      <y>0</y>
+      <width>901</width>
+      <height>511</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -79,49 +94,55 @@
       <verstretch>0</verstretch>
      </sizepolicy>
     </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(40, 40, 40);</string>
-    </property>
-    <property name="iconSize">
-     <size>
-      <width>24</width>
-      <height>24</height>
-     </size>
-    </property>
-    <property name="spacing">
-     <number>4</number>
-    </property>
-    <property name="gridSize">
-     <size>
-      <width>10</width>
-      <height>20</height>
-     </size>
-    </property>
-   </widget>
-   <widget class="QTextEdit" name="textEdit">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>669</width>
-      <height>501</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(40, 40, 40);</string>
-    </property>
-    <property name="lineWrapMode">
-     <enum>QTextEdit::LineWrapMode::NoWrap</enum>
-    </property>
-    <property name="acceptRichText">
-     <bool>false</bool>
-    </property>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="1">
+      <widget class="QListView" name="listView">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(40, 40, 40);</string>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="spacing">
+        <number>4</number>
+       </property>
+       <property name="gridSize">
+        <size>
+         <width>10</width>
+         <height>20</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QTextEdit" name="textEdit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(40, 40, 40);</string>
+       </property>
+       <property name="lineWrapMode">
+        <enum>QTextEdit::LineWrapMode::NoWrap</enum>
+       </property>
+       <property name="acceptRichText">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -152,11 +173,6 @@
   <action name="actionLoad_Folder">
    <property name="text">
     <string>Load Folder</string>
-   </property>
-  </action>
-  <action name="actionSet_AppData_Folder">
-   <property name="text">
-    <string>Set AppData Folder</string>
    </property>
   </action>
   <action name="actionSet_TF2_Root_Folder">
