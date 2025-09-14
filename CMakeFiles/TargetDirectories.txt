@@ -1,0 +1,9 @@
+/home/tevin/lbox-lua-external/CMakeFiles/lbox-lua-runner.dir
+/home/tevin/lbox-lua-external/CMakeFiles/edit_cache.dir
+/home/tevin/lbox-lua-external/CMakeFiles/rebuild_cache.dir
+/home/tevin/lbox-lua-external/CMakeFiles/list_install_components.dir
+/home/tevin/lbox-lua-external/CMakeFiles/install.dir
+/home/tevin/lbox-lua-external/CMakeFiles/install/local.dir
+/home/tevin/lbox-lua-external/CMakeFiles/install/strip.dir
+/home/tevin/lbox-lua-external/CMakeFiles/lbox-lua-runner_autogen_timestamp_deps.dir
+/home/tevin/lbox-lua-external/CMakeFiles/lbox-lua-runner_autogen.dir
