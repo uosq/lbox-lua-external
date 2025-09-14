@@ -142,9 +142,6 @@ void MainWindow::on_actionLoad_Folder_triggered() {
 void MainWindow::on_listView_clicked(const QModelIndex &index) {
     QString fileName = index.data(Qt::DisplayRole).toString();
 
-    // Get the folder path (assuming you have stored it somewhere; here we reuse the last loaded folder)
-    // If you want, you could store the folder path in a member variable
-
     QString fullPath = listViewLoadedFolder + "/" + fileName;
 
     QFile file(fullPath);
