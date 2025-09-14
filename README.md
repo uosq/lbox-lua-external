@@ -23,5 +23,5 @@ Build instructions:
 ```sh
 git clone https://github.com/uosq/lbox-lua-external.git
 cd lbox-lua-external
-cmake .
+cmake --build /home/tevin/lbox-lua-external/build/Desktop-Release --target all
 ```
