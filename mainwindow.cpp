@@ -1,12 +1,13 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "luasyntaxhighlight.h"
+#include "consolesyntaxhighlight.h"
 #include <QFileDialog>
 #include <QStandardItem>
 #include <QMessageBox>
 #include <QTimer>
 #include <QThread>
-#include "filereader.h"
+#include <QFileSystemWatcher>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -15,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowFlag(Qt::WindowStaysOnTopHint, 1);
     ui->setupUi(this);
     new LuaSyntaxHighlighter(ui->plainTextEdit->document());
+    new ConsoleSyntaxHighlight(ui->consoleTextEdit->document());
 
     QFile settingsFile("settings.txt");
     if (settingsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -32,34 +34,48 @@ MainWindow::MainWindow(QWidget *parent)
     }
 
     QString filePath = tfRootFolder + "/Executor/console.txt";
+    QString debugFilePath = tfRootFolder + "/Executor/debug.txt";
 
-    // Create worker + thread
-    FileReader *worker = new FileReader(filePath);
-    fileThread = new QThread(this);
-    worker->moveToThread(fileThread);
+    QFileSystemWatcher *watcher1 = new QFileSystemWatcher(this);
+    QFileSystemWatcher *watcher2 = new QFileSystemWatcher(this);
+    watcher1->addPath(debugFilePath);
+    watcher2->addPath(filePath);
 
-    // Create timer in worker thread
-    QTimer *timer = new QTimer;
-    timer->setInterval(1000); // every 1 second
-    timer->moveToThread(fileThread);
+    connect(watcher1, &QFileSystemWatcher::fileChanged,
+            this, [this, debugFilePath, watcher1]() {
+                QFile file(debugFilePath);
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    QTextStream in(&file);
+                    QString contents = in.readAll();
+                    ui->plainTextEdit_2->setPlainText(contents);
+                    file.close();
+                }
 
-    // Connect signals/slots
-    connect(timer, &QTimer::timeout, worker, &FileReader::readFile);
-    connect(worker, &FileReader::fileRead, this, &MainWindow::onFileRead);
+                // QFileSystemWatcher sometimes stops after a change, re-add the file
+                if (!watcher1->files().contains(debugFilePath))
+                    watcher1->addPath(debugFilePath);
+            });
 
-    // Clean up
-    connect(fileThread, &QThread::finished, worker, &QObject::deleteLater);
-    connect(fileThread, &QThread::finished, timer, &QObject::deleteLater);
+    connect(watcher2, &QFileSystemWatcher::fileChanged,
+            this, [this, filePath, watcher2]() {
+                QFile file(filePath);
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    QTextStream in(&file);
+                    QString contents = in.readAll();
+                    ui->consoleTextEdit->setPlainText(contents);
+                    file.close();
+                }
 
-    // Start thread + timer
-    connect(fileThread, &QThread::started, timer, QOverload<>::of(&QTimer::start));
-    fileThread->start();
+                // QFileSystemWatcher sometimes stops after a change, re-add the file
+                if (!watcher2->files().contains(filePath))
+                    watcher2->addPath(filePath);
+            });
 }
 
 void MainWindow::onFileRead(const QString &text)
 {
     // Runs in the GUI thread
-    ui->consoleTextEdit->setPlainText(text);
+    ui->consoleTextEdit->setText(text);
 }
 
 MainWindow::~MainWindow()
@@ -79,63 +95,11 @@ MainWindow::~MainWindow()
         console.close();
     }
 
-    if (fileThread) {
-        fileThread->quit();
-        fileThread->wait();
-    }
-
     delete ui;
 }
 
 void MainWindow::on_execBtn_clicked() {
-    if (tfRootFolder == "" || tfRootFolder.isEmpty()) {
-        QMessageBox::critical(this, "Error!", tr("You have to select a root folder!\nFile -> Set TF2 Root Folder"));
-        return;
-    }
-
-    QString luaEnv = R"(
-local function print(...)
-    local console <close> = io.open('Executor/console.txt', 'a+')
-    if console then
-        console:setvbuf('no')
-        local args = {...}
-        for _, line in pairs (args) do
-            console:write(string.format('%s\n', tostring(line)))
-        end
-        console:flush()
-    end
-end
-
-local function error(...)
-    local args = {...}
-    for i = 1, #args do
-        if (args[i]) then
-            print(string.format('[Error] %s', tostring(args[i])))
-        end
-    end
-end
-
-local function warn(...)
-    local args = {...}
-    for i = 1, #args do
-        if (args[i]) then
-            print(string.format('[Warn] %s', tostring(args[i])))
-        end
-    end
-end
-
-)";
-
-    QString text = ui->plainTextEdit->toPlainText();
-
-    QFile file = QFile(tfRootFolder + "/Executor/script.lua");
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&file);
-        out << luaEnv << "\n" << text;
-        file.close();
-    }
-
-    qDebug() << "Executed!";
+    Execute(ui->plainTextEdit->toPlainText());
 }
 
 void MainWindow::on_clearBtn_clicked() {
@@ -156,7 +120,7 @@ void MainWindow::on_actionLoad_File_triggered() {
 }
 
 void MainWindow::LoadListFolder() {
-    if (listViewLoadedFolder.isEmpty())
+    if (listViewLoadedFolder.isEmpty() || listViewLoadedFolder == "")
         return; // User canceled
 
     QDir dir(listViewLoadedFolder);
@@ -237,4 +201,61 @@ void MainWindow::on_saveBtn_clicked() {
         file.write(ui->plainTextEdit->toPlainText().toStdString().c_str());
         file.close();
     }
+}
+
+void MainWindow::Execute(const QString &text) {
+    if (tfRootFolder == "" || tfRootFolder.isEmpty()) {
+        QMessageBox::critical(this, "Error!", tr("You have to select a root folder!\nFile -> Set TF2 Root Folder"));
+        return;
+    }
+
+    QString luaEnv = R"(
+local function outputToConsole(...)
+    local console <close> = io.open('Executor/console.txt', 'a+')
+    if console then
+        console:setvbuf('no')
+        local args = {...}
+        for _, line in pairs (args) do
+            console:write(string.format('%s\n', tostring(line)))
+        end
+        console:flush()
+    end
+end
+
+local function print(...)
+    local args = {...}
+    for i = 1, #args do
+        if (args[i]) then
+            outputToConsole(string.format('[Print] %s', tostring(args[i])))
+        end
+    end
+end
+
+local function error(...)
+    local args = {...}
+    for i = 1, #args do
+        if (args[i]) then
+            outputToConsole(string.format('[Error] %s', tostring(args[i])))
+        end
+    end
+end
+
+local function warn(...)
+    local args = {...}
+    for i = 1, #args do
+        if (args[i]) then
+            outputToConsole(string.format('[Warn] %s', tostring(args[i])))
+        end
+    end
+end
+)";
+
+    QFile file = QFile(tfRootFolder + "/Executor/script.lua");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << luaEnv << "\n" << text;
+        file.close();
+    }
+
+    qDebug() << "Executed!";
 }

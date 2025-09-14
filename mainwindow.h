@@ -20,6 +20,7 @@ public:
     QString listViewLoadedFolder = "";
     void LoadListFolder();
     void onFileRead(const QString &text);
+    void Execute(const QString &text);
 
 private slots:
     void on_execBtn_clicked();
@@ -32,6 +33,5 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QThread *fileThread = nullptr;
 };
 #endif // MAINWINDOW_H
