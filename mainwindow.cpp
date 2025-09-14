@@ -93,14 +93,45 @@ void MainWindow::on_execBtn_clicked() {
         return;
     }
 
-    QString text = ui->plainTextEdit->toPlainText();
+    QString luaEnv = R"(
+local function print(...)
+    local console <close> = io.open('Executor/console.txt', 'a+')
+    if console then
+        console:setvbuf('no')
+        local args = {...}
+        for _, line in pairs (args) do
+            console:write(string.format('%s\n', tostring(line)))
+        end
+        console:flush()
+    end
+end
 
-    //qDebug() << text;
+local function error(...)
+    local args = {...}
+    for i = 1, #args do
+        if (args[i]) then
+            print(string.format('[Error] %s', tostring(args[i])))
+        end
+    end
+end
+
+local function warn(...)
+    local args = {...}
+    for i = 1, #args do
+        if (args[i]) then
+            print(string.format('[Warn] %s', tostring(args[i])))
+        end
+    end
+end
+
+)";
+
+    QString text = ui->plainTextEdit->toPlainText();
 
     QFile file = QFile(tfRootFolder + "/Executor/script.lua");
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
-        out << text;
+        out << luaEnv << "\n" << text;
         file.close();
     }
 
