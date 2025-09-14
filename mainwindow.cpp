@@ -1,10 +1,12 @@
-#include <fstream>
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "luasyntaxhighlight.h"
 #include <QFileDialog>
 #include <QStandardItem>
 #include <QMessageBox>
+#include <QTimer>
+#include <QThread>
+#include "filereader.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -28,6 +30,36 @@ MainWindow::MainWindow(QWidget *parent)
     } else {
         qDebug() << "Couldn't open settings.txt!";
     }
+
+    QString filePath = tfRootFolder + "/Executor/console.txt";
+
+    // Create worker + thread
+    FileReader *worker = new FileReader(filePath);
+    fileThread = new QThread(this);
+    worker->moveToThread(fileThread);
+
+    // Create timer in worker thread
+    QTimer *timer = new QTimer;
+    timer->setInterval(1000); // every 1 second
+    timer->moveToThread(fileThread);
+
+    // Connect signals/slots
+    connect(timer, &QTimer::timeout, worker, &FileReader::readFile);
+    connect(worker, &FileReader::fileRead, this, &MainWindow::onFileRead);
+
+    // Clean up
+    connect(fileThread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(fileThread, &QThread::finished, timer, &QObject::deleteLater);
+
+    // Start thread + timer
+    connect(fileThread, &QThread::started, timer, QOverload<>::of(&QTimer::start));
+    fileThread->start();
+}
+
+void MainWindow::onFileRead(const QString &text)
+{
+    // Runs in the GUI thread
+    ui->consoleTextEdit->setPlainText(text);
 }
 
 MainWindow::~MainWindow()
@@ -37,6 +69,19 @@ MainWindow::~MainWindow()
         QTextStream out(&settingsFile);
         out << tfRootFolder << "\n";
         out << listViewLoadedFolder;
+        settingsFile.close();
+    }
+
+    QFile console(tfRootFolder + "/Executor/console.txt");
+    if (console.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&console);
+        out << "";
+        console.close();
+    }
+
+    if (fileThread) {
+        fileThread->quit();
+        fileThread->wait();
     }
 
     delete ui;
@@ -50,20 +95,14 @@ void MainWindow::on_execBtn_clicked() {
 
     QString text = ui->plainTextEdit->toPlainText();
 
-    QString outputPath = "";
-    outputPath.append(tfRootFolder);
-    outputPath.append("/Executor/script.lua");
-    //qDebug() << outputPath;
+    //qDebug() << text;
 
-    std::ofstream outputFile(outputPath.toStdString());
-    if(!outputFile.is_open()) {
-        qDebug() << "Failed to open output file!";
-        return;
+    QFile file = QFile(tfRootFolder + "/Executor/script.lua");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << text;
+        file.close();
     }
-
-    outputFile << text.toStdString() << std::endl;
-
-    outputFile.close();
 
     qDebug() << "Executed!";
 }

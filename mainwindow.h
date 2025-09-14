@@ -19,6 +19,7 @@ public:
     QString tfRootFolder = "";
     QString listViewLoadedFolder = "";
     void LoadListFolder();
+    void onFileRead(const QString &text);
 
 private slots:
     void on_execBtn_clicked();
@@ -31,5 +32,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    QThread *fileThread = nullptr;
 };
 #endif // MAINWINDOW_H

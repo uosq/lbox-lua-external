@@ -7,8 +7,20 @@
     <x>0</x>
     <y>0</y>
     <width>801</width>
-    <height>431</height>
+    <height>445</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>801</width>
+    <height>445</height>
+   </size>
   </property>
   <property name="focusPolicy">
    <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -39,7 +51,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>360</y>
+      <y>370</y>
       <width>80</width>
       <height>26</height>
      </rect>
@@ -58,7 +70,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>360</y>
+      <y>370</y>
       <width>80</width>
       <height>26</height>
      </rect>
@@ -93,7 +105,7 @@
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>360</y>
+      <y>370</y>
       <width>80</width>
       <height>26</height>
      </rect>
@@ -108,35 +120,13 @@
      <string>Save File</string>
     </property>
    </widget>
-   <widget class="QPlainTextEdit" name="plainTextEdit">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>20</y>
-      <width>571</width>
-      <height>333</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(35, 35, 35);</string>
-    </property>
-    <property name="lineWrapMode">
-     <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
-    </property>
-    <property name="tabStopDistance">
-     <double>10.000000000000000</double>
-    </property>
-    <property name="placeholderText">
-     <string>Lua code here</string>
-    </property>
-   </widget>
    <widget class="QListView" name="listView">
     <property name="geometry">
      <rect>
       <x>590</x>
-      <y>20</y>
+      <y>40</y>
       <width>201</width>
-      <height>333</height>
+      <height>311</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -163,6 +153,67 @@
       <height>20</height>
      </size>
     </property>
+   </widget>
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>6</x>
+      <y>0</y>
+      <width>581</width>
+      <height>361</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tab">
+     <attribute name="title">
+      <string>Console</string>
+     </attribute>
+     <widget class="QPlainTextEdit" name="consoleTextEdit">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>561</width>
+        <height>311</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(35, 35, 35);</string>
+      </property>
+      <property name="placeholderText">
+       <string>Your output goes here</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>Editor</string>
+     </attribute>
+     <widget class="QPlainTextEdit" name="plainTextEdit">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>561</width>
+        <height>311</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(35, 35, 35);</string>
+      </property>
+      <property name="lineWrapMode">
+       <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
+      </property>
+      <property name="tabStopDistance">
+       <double>10.000000000000000</double>
+      </property>
+      <property name="placeholderText">
+       <string>Lua code here</string>
+      </property>
+     </widget>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
