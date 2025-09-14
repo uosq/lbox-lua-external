@@ -6,19 +6,39 @@
 #include <QStandardItem>
 #include <QMessageBox>
 
-#define OUTPUT_PATH "/home/tevin/hd/tf2/Team Fortress 2/Executor/script.lua"
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+    setWindowFlag(Qt::WindowStaysOnTopHint, 1);
     ui->setupUi(this);
+    new LuaSyntaxHighlighter(ui->plainTextEdit->document());
 
-    new LuaSyntaxHighlighter(ui->textEdit->document());
+    QFile settingsFile("settings.txt");
+    if (settingsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString rootFolder = QString::fromUtf8(settingsFile.readLine()).trimmed();
+        QString listFolder = QString::fromUtf8(settingsFile.readLine()).trimmed();
+
+        tfRootFolder = rootFolder;
+        listViewLoadedFolder = listFolder;
+
+        LoadListFolder();
+
+        settingsFile.close();
+    } else {
+        qDebug() << "Couldn't open settings.txt!";
+    }
 }
 
 MainWindow::~MainWindow()
 {
+    QFile settingsFile("settings.txt");
+    if (settingsFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&settingsFile);
+        out << tfRootFolder << "\n";
+        out << listViewLoadedFolder;
+    }
+
     delete ui;
 }
 
@@ -28,7 +48,7 @@ void MainWindow::on_execBtn_clicked() {
         return;
     }
 
-    QString text = ui->textEdit->toPlainText();
+    QString text = ui->plainTextEdit->toPlainText();
 
     QString outputPath = "";
     outputPath.append(tfRootFolder);
@@ -49,7 +69,7 @@ void MainWindow::on_execBtn_clicked() {
 }
 
 void MainWindow::on_clearBtn_clicked() {
-    ui->textEdit->setText("");
+    ui->plainTextEdit->setPlainText("");
 }
 
 void MainWindow::on_actionLoad_File_triggered() {
@@ -60,13 +80,39 @@ void MainWindow::on_actionLoad_File_triggered() {
             QTextStream in(&file);
             QString content = in.readAll();
             file.close();
-            ui->textEdit->setText(content);
+            ui->plainTextEdit->setPlainText(content);
         }
     }
 }
 
+void MainWindow::LoadListFolder() {
+    if (listViewLoadedFolder.isEmpty())
+        return; // User canceled
+
+    QDir dir(listViewLoadedFolder);
+
+    listViewLoadedFolder = dir.absolutePath();
+    //qDebug() << listViewLoadedFolder;
+
+    // Filter for .lua files only
+    QStringList filters;
+    filters << "*.lua";
+    QStringList luaFiles = dir.entryList(filters, QDir::Files);
+
+    // Create a model to populate the list view
+    QStandardItemModel* model = new QStandardItemModel(this);
+
+    for (const QString& fileName : std::as_const(luaFiles)) {
+        QStandardItem* item = new QStandardItem(fileName);
+        model->appendRow(item);
+    }
+
+    // Set the model to the QListView
+    ui->listView->setModel(model);
+}
+
 void MainWindow::on_actionLoad_Folder_triggered() {
-    QString folderPath = QFileDialog::getExistingDirectory(this, tr("Select Folder"));
+    QString folderPath = QFileDialog::getExistingDirectory(this, tr("Select Script Folder"));
 
     if (folderPath.isEmpty())
         return; // User canceled
@@ -74,7 +120,7 @@ void MainWindow::on_actionLoad_Folder_triggered() {
     QDir dir(folderPath);
 
     listViewLoadedFolder = dir.absolutePath();
-    qDebug() << listViewLoadedFolder;
+    //qDebug() << listViewLoadedFolder;
 
     // Filter for .lua files only
     QStringList filters;
@@ -105,7 +151,7 @@ void MainWindow::on_listView_clicked(const QModelIndex &index) {
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
         QString content = in.readAll();
-        ui->textEdit->setText(content);
+        ui->plainTextEdit->setPlainText(content);
         file.close();
     } else {
         qDebug() << "Failed to open file:" << fullPath;
@@ -113,6 +159,15 @@ void MainWindow::on_listView_clicked(const QModelIndex &index) {
 }
 
 void MainWindow::on_actionSet_TF2_Root_Folder_triggered() {
-    QString folderPath = QFileDialog::getExistingDirectory(this, tr("Select Folder"));
+    QString folderPath = QFileDialog::getExistingDirectory(this, tr("Select TF2's Root Folder"));
     tfRootFolder = folderPath;
+}
+
+void MainWindow::on_saveBtn_clicked() {
+    QString filePath = QFileDialog::getSaveFileName(this, "Save File", "", "All files (*.*);;Lua files (*.lua)");
+    QFile file = QFile(filePath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(ui->plainTextEdit->toPlainText().toStdString().c_str());
+        file.close();
+    }
 }

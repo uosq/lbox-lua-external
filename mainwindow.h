@@ -18,6 +18,7 @@ public:
     ~MainWindow();
     QString tfRootFolder = "";
     QString listViewLoadedFolder = "";
+    void LoadListFolder();
 
 private slots:
     void on_execBtn_clicked();
@@ -26,6 +27,7 @@ private slots:
     void on_actionLoad_Folder_triggered();
     void on_listView_clicked(const QModelIndex &index);
     void on_actionSet_TF2_Root_Folder_triggered();
+    void on_saveBtn_clicked();
 
 private:
     Ui::MainWindow *ui;

@@ -5,7 +5,6 @@ LuaSyntaxHighlighter::LuaSyntaxHighlighter(QTextDocument *parent)
 {
     // Lua keywords
     keywordFormat.setForeground(QColor(0, 255, 255));
-    keywordFormat.setFontWeight(QFont::Bold);
     QStringList keywordPatterns = {
         "\\band\\b", "\\band\\b", "\\bbreak\\b", "\\bdo\\b",
         "\\belse\\b", "\\belseif\\b", "\\bend\\b", "\\bfalse\\b",
@@ -22,7 +21,6 @@ LuaSyntaxHighlighter::LuaSyntaxHighlighter(QTextDocument *parent)
     }
 
     libraryFormat.setForeground(QColor(188, 255, 166));
-    keywordFormat.setFontWeight(QFont::Bold);
     QStringList libraryPatterns = {
         "\\bdraw\\b", "\\bphysics\\b", "\\baimbot\\b",
         "\\bcallbacks\\b", "\\bclient\\b", "\\bclientstate\\b",
