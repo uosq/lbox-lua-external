@@ -182,6 +182,9 @@
       <property name="styleSheet">
        <string notr="true">background-color: rgb(35, 35, 35);</string>
       </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
       <property name="placeholderText">
        <string>Your output goes here</string>
       </property>
