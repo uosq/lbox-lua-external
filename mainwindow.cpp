@@ -46,8 +46,16 @@ MainWindow::MainWindow(QWidget *parent)
                 QFile file(debugFilePath);
                 if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
                     QTextStream in(&file);
-                    QString contents = in.readAll();
-                    ui->plainTextEdit_2->setPlainText(contents);
+
+                    // Clear previous text first
+                    ui->plainTextEdit_2->clear();
+
+                    // Append line by line
+                    while (!in.atEnd()) {
+                        QString line = in.readLine();
+                        ui->plainTextEdit_2->appendPlainText(line);
+                    }
+
                     file.close();
                 }
 
@@ -61,8 +69,17 @@ MainWindow::MainWindow(QWidget *parent)
                 QFile file(filePath);
                 if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
                     QTextStream in(&file);
-                    QString contents = in.readAll();
-                    ui->consoleTextEdit->setPlainText(contents);
+
+                    // Clear previous text first
+                    ui->consoleTextEdit->clear();
+
+                    // Append line by line
+                    // This makes the file when updated go to the last line instead of the first one
+                    while (!in.atEnd()) {
+                        QString line = in.readLine();
+                        ui->consoleTextEdit->append(line);
+                    }
+
                     file.close();
                 }
 
@@ -70,12 +87,6 @@ MainWindow::MainWindow(QWidget *parent)
                 if (!watcher2->files().contains(filePath))
                     watcher2->addPath(filePath);
             });
-}
-
-void MainWindow::onFileRead(const QString &text)
-{
-    // Runs in the GUI thread
-    ui->consoleTextEdit->setText(text);
 }
 
 MainWindow::~MainWindow()
@@ -93,6 +104,13 @@ MainWindow::~MainWindow()
         QTextStream out(&console);
         out << "";
         console.close();
+    }
+
+    QFile debug(tfRootFolder + "/Executor/debug.txt");
+    if(debug.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&debug);
+        out << "";
+        debug.close();
     }
 
     delete ui;
@@ -258,4 +276,64 @@ end
     }
 
     qDebug() << "Executed!";
+}
+
+void MainWindow::GetMenuInt(const QString &text, std::function<void(int)> callback) {
+    QString code = QString(R"(local value = gui.GetValue("%1")
+local file <close> = io.open("Executor/returnvalue.txt", "w")
+if file then
+    file:write(value)
+    file:flush()
+    file:close()
+end)").arg(text);
+
+    auto *watcher = new QFileSystemWatcher(this);
+    QString retFile = tfRootFolder + "/Executor/returnvalue.txt";
+    watcher->addPath(retFile);
+
+    connect(watcher, &QFileSystemWatcher::fileChanged, this,
+            [this, watcher, retFile, callback](const QString &) {
+                QFile file(retFile);
+                int result = -1;
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    QTextStream in(&file);
+                    result = in.readAll().trimmed().toInt();
+                    file.close();
+                }
+                watcher->deleteLater();
+                callback(result);
+            });
+
+    Execute(code);
+}
+
+void MainWindow::GetMenuString(const QString &text, std::function<void(QString)> callback) {
+    QString code = QString(R"(
+local value = gui.GetValue("%1")
+local file <close> = io.open("Executor/returnvalue.txt", "w")
+if file then
+    file:write(value)
+    file:flush()
+    file:close()
+end
+)").arg(text);
+
+    auto *watcher = new QFileSystemWatcher(this);
+    QString retFile = tfRootFolder + "/Executor/returnvalue.txt";
+    watcher->addPath(retFile);
+
+    connect(watcher, &QFileSystemWatcher::fileChanged, this,
+            [this, watcher, retFile, callback](const QString &) {
+                QFile file(retFile);
+                QString result = "";
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    QTextStream in(&file);
+                    result = in.readAll();
+                    file.close();
+                }
+                watcher->deleteLater();
+                callback(result);
+            });
+
+    Execute(code);
 }

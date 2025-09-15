@@ -19,8 +19,9 @@ public:
     QString tfRootFolder = "";
     QString listViewLoadedFolder = "";
     void LoadListFolder();
-    void onFileRead(const QString &text);
     void Execute(const QString &text);
+    void GetMenuInt(const QString &text, std::function<void(int)> callback);
+    void GetMenuString(const QString &text, std::function<void(QString)> callback);
 
 private slots:
     void on_execBtn_clicked();

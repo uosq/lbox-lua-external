@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>801</width>
+    <width>792</width>
     <height>445</height>
    </rect>
   </property>
@@ -29,7 +29,7 @@
    <string>LUA Runner</string>
   </property>
   <property name="windowOpacity">
-   <double>0.990000000000000</double>
+   <double>1.000000000000000</double>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(26, 26, 26);</string>
@@ -53,133 +53,13 @@
    <set>QMainWindow::DockOption::AllowTabbedDocks|QMainWindow::DockOption::AnimatedDocks</set>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="clearBtn">
-    <property name="geometry">
-     <rect>
-      <x>100</x>
-      <y>370</y>
-      <width>80</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="autoFillBackground">
-     <bool>true</bool>
-    </property>
-    <property name="text">
-     <string>Clear</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="execBtn">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>370</y>
-      <width>80</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="autoFillBackground">
-     <bool>false</bool>
-    </property>
-    <property name="styleSheet">
-     <string notr="true"/>
-    </property>
-    <property name="text">
-     <string>Run Code</string>
-    </property>
-    <property name="flat">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>640</x>
-      <y>0</y>
-      <width>91</width>
-      <height>18</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Script List</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="saveBtn">
-    <property name="geometry">
-     <rect>
-      <x>190</x>
-      <y>370</y>
-      <width>80</width>
-      <height>26</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="autoFillBackground">
-     <bool>true</bool>
-    </property>
-    <property name="text">
-     <string>Save File</string>
-    </property>
-   </widget>
-   <widget class="QListView" name="listView">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>40</y>
-      <width>201</width>
-      <height>311</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(35, 35, 35);
-border-color: rgb(255, 255, 255);</string>
-    </property>
-    <property name="iconSize">
-     <size>
-      <width>24</width>
-      <height>24</height>
-     </size>
-    </property>
-    <property name="spacing">
-     <number>4</number>
-    </property>
-    <property name="gridSize">
-     <size>
-      <width>10</width>
-      <height>20</height>
-     </size>
-    </property>
-   </widget>
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
       <x>6</x>
       <y>0</y>
-      <width>581</width>
-      <height>361</height>
+      <width>781</width>
+      <height>401</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -189,7 +69,7 @@ border-color: rgb(255, 255, 255);</string>
      <enum>QTabWidget::TabShape::Rounded</enum>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -199,14 +79,15 @@ border-color: rgb(255, 255, 255);</string>
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>10</y>
-        <width>571</width>
-        <height>311</height>
+        <y>20</y>
+        <width>761</width>
+        <height>341</height>
        </rect>
       </property>
       <property name="styleSheet">
        <string notr="true">background-color: rgb(35, 35, 35);
-border-color: rgb(246, 245, 244);</string>
+border-color: rgb(246, 245, 244);
+color: rgb(255, 255, 255);</string>
       </property>
       <property name="autoFormatting">
        <set>QTextEdit::AutoFormattingFlag::AutoNone</set>
@@ -227,8 +108,8 @@ border-color: rgb(246, 245, 244);</string>
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>10</y>
-        <width>571</width>
+        <y>20</y>
+        <width>551</width>
         <height>311</height>
        </rect>
       </property>
@@ -247,6 +128,126 @@ border-color: rgb(255, 255, 255);</string>
        <string>Lua code here</string>
       </property>
      </widget>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>630</x>
+        <y>0</y>
+        <width>91</width>
+        <height>18</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Script List</string>
+      </property>
+     </widget>
+     <widget class="QListView" name="listView">
+      <property name="geometry">
+       <rect>
+        <x>570</x>
+        <y>20</y>
+        <width>201</width>
+        <height>311</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(35, 35, 35);
+border-color: rgb(255, 255, 255);</string>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>24</width>
+        <height>24</height>
+       </size>
+      </property>
+      <property name="spacing">
+       <number>4</number>
+      </property>
+      <property name="gridSize">
+       <size>
+        <width>10</width>
+        <height>20</height>
+       </size>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="saveBtn">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>340</y>
+        <width>80</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Save File</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="clearBtn">
+      <property name="geometry">
+       <rect>
+        <x>100</x>
+        <y>340</y>
+        <width>80</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Clear</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="execBtn">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>340</y>
+        <width>80</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
+      </property>
+      <property name="text">
+       <string>Run Code</string>
+      </property>
+      <property name="flat">
+       <bool>false</bool>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="tab_3">
      <attribute name="title">
@@ -256,9 +257,9 @@ border-color: rgb(255, 255, 255);</string>
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>10</y>
-        <width>571</width>
-        <height>311</height>
+        <y>20</y>
+        <width>761</width>
+        <height>341</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -272,6 +273,9 @@ border-color: rgb(255, 255, 255);</string>
       <property name="plainText">
        <string/>
       </property>
+      <property name="placeholderText">
+       <string>Write into tf2 root/Executor/debug.txt</string>
+      </property>
      </widget>
     </widget>
    </widget>
@@ -281,7 +285,7 @@ border-color: rgb(255, 255, 255);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>801</width>
+     <width>792</width>
      <height>23</height>
     </rect>
    </property>

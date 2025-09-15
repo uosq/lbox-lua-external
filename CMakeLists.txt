@@ -26,7 +26,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         luasyntaxhighlight.h luasyntaxhighlight.cpp
         README.md
         runner-helper.lua
-        filereader.h
+
         consolesyntaxhighlight.h consolesyntaxhighlight.cpp
 
 
