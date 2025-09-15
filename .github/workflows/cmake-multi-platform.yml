@@ -44,6 +44,9 @@ jobs:
           - os: ubuntu-latest
             c_compiler: cl
 
+          - name: Install Qt
+            uses: jurplel/install-qt-action@v4.3.0
+
     steps:
     - uses: actions/checkout@v4
 
