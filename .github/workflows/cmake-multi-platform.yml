@@ -74,10 +74,6 @@ jobs:
       with:
         name: binaries-${{ matrix.os }}-${{ matrix.build_type }}
         path: |
-          ${{ steps.strings.outputs.build-output-dir }}/Release/*.exe
+          ${{ steps.strings.outputs.build-output-dir }}/Release/lbox-lua-runner.exe
 
-          ${{ steps.strings.outputs.build-output-dir }}/*
-          !${{ steps.strings.outputs.build-output-dir }}/*.o
-          !${{ steps.strings.outputs.build-output-dir }}/*.a
-          !${{ steps.strings.outputs.build-output-dir }}/*.cmake
-          !${{ steps.strings.outputs.build-output-dir }}/CMakeFiles/**
+          ${{ steps.strings.outputs.build-output-dir }}/lbox-lua-runner
