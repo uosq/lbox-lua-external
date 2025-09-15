@@ -74,7 +74,7 @@ MainWindow::MainWindow(QWidget *parent)
                     ui->consoleTextEdit->clear();
 
                     // Append line by line
-                    // This makes the file when updated go to the last line instead of the first one
+                    // This makes the file, when updated, go to the last line instead of the first one
                     while (!in.atEnd()) {
                         QString line = in.readLine();
                         ui->consoleTextEdit->append(line);
