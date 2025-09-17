@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkRequest>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -16,8 +18,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    QString tfRootFolder = "";
-    QString listViewLoadedFolder = "";
     void LoadListFolder();
     void Execute(const QString &text);
     void GetMenuInt(const QString &text, std::function<void(int)> callback);
@@ -34,5 +34,9 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    QString tfRootFolder = "";
+    QString listViewLoadedFolder = "";
+    QNetworkAccessManager *manager = nullptr;
+    QNetworkRequest request;
 };
 #endif // MAINWINDOW_H

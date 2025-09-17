@@ -1,13 +1,24 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+
 #include "luasyntaxhighlight.h"
 #include "consolesyntaxhighlight.h"
+#include "luascripts.h"
+
 #include <QFileDialog>
 #include <QStandardItem>
 #include <QMessageBox>
 #include <QTimer>
 #include <QThread>
 #include <QFileSystemWatcher>
+#include <QtNetwork/QNetworkReply>
+
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonParseError>
+#include <QJsonArray>
+
+#include <QInputDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -87,6 +98,100 @@ MainWindow::MainWindow(QWidget *parent)
                 if (!watcher2->files().contains(filePath))
                     watcher2->addPath(filePath);
             });
+
+    manager = new QNetworkAccessManager(this);
+    connect(manager, &QNetworkAccessManager::finished, this, [=](QNetworkReply *reply) {
+        if (reply->error()) {
+            qDebug() << reply->errorString();
+            return;
+        }
+
+        QByteArray byteArray = reply->readAll();
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(byteArray, &parseError);
+
+        if (parseError.error != QJsonParseError::NoError) {
+            qWarning() << "JSON parse error:" << parseError.errorString();
+        } else {
+            if (doc.isArray()) {
+                QJsonArray arr = doc.array();
+
+                // Get the scroll area contents widget
+                QWidget *container = ui->scrollAreaWidgetContents;
+                QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(container->layout());
+                if (!layout) {
+                    layout = new QVBoxLayout(container);
+                    container->setLayout(layout);
+                }
+
+                // Clear any previous buttons if necessary
+                QLayoutItem *child;
+                while ((child = layout->takeAt(0)) != nullptr) {
+                    if (child->widget()) {
+                        delete child->widget();
+                    }
+                    delete child;
+                }
+
+                for (const QJsonValue &val : std::as_const(arr)) {
+                    QJsonObject obj = val.toObject();
+                    QString name = obj["name"].toString();
+                    QString manifestUrl = obj["download_url"].toString();
+
+                    if (name.endsWith(".json", Qt::CaseInsensitive)) {
+                        name.chop(5); // remove ".json"
+                    }
+
+                    if (name.isEmpty() || manifestUrl.isEmpty())
+                        continue;
+
+                    QPushButton *btn = new QPushButton(name, container);
+                    layout->addWidget(btn);
+
+                    connect(btn, &QPushButton::clicked, this, [this, manifestUrl]() {
+                        QNetworkRequest manifestRequest;
+                        manifestRequest.setUrl(QUrl(manifestUrl));
+
+                        QNetworkReply *manifestReply = manager->get(manifestRequest);
+
+                        connect(manifestReply, &QNetworkReply::finished, this, [this, manifestReply]() {
+                            manifestReply->deleteLater();
+
+                            if (manifestReply->error()) {
+                                qDebug() << "Manifest request error:" << manifestReply->errorString();
+                                return;
+                            }
+
+                            QByteArray manifestData = manifestReply->readAll();
+                            QJsonParseError parseError;
+                            QJsonDocument manifestDoc = QJsonDocument::fromJson(manifestData, &parseError);
+
+                            if (parseError.error != QJsonParseError::NoError) {
+                                qWarning() << "Manifest JSON parse error:" << parseError.errorString();
+                                return;
+                            }
+
+                            if (manifestDoc.isObject()) {
+                                QJsonObject manifestObj = manifestDoc.object();
+                                QString luaUrl = manifestObj["url"].toString();
+                                if (!luaUrl.isEmpty()) {
+                                    QString luaCode = QString("load(http.Get(\"%1\"))()").arg(luaUrl);
+                                    Execute(luaCode);
+                                } else {
+                                    qWarning() << "No 'url' field in manifest JSON";
+                                }
+                            }
+                        });
+                    });
+                }
+
+                layout->addStretch(); // push everything to top
+            }
+        }
+    });
+
+    request.setUrl(QUrl("https://api.github.com/repos/uosq/cheese-bread-pkgs/contents/packages"));
+    manager->get(request);
 }
 
 MainWindow::~MainWindow()
@@ -114,6 +219,7 @@ MainWindow::~MainWindow()
     }
 
     delete ui;
+    delete manager;
 }
 
 void MainWindow::on_execBtn_clicked() {
@@ -227,66 +333,17 @@ void MainWindow::Execute(const QString &text) {
         return;
     }
 
-    QString luaEnv = R"(
-local function outputToConsole(...)
-    local console <close> = io.open('Executor/console.txt', 'a+')
-    if console then
-        console:setvbuf('no')
-        local args = {...}
-        for _, line in pairs (args) do
-            console:write(string.format('%s\n', tostring(line)))
-        end
-        console:flush()
-    end
-end
-
-local function print(...)
-    local args = {...}
-    for i = 1, #args do
-        if (args[i]) then
-            outputToConsole(string.format('[Print] %s', tostring(args[i])))
-        end
-    end
-end
-
-local function error(...)
-    local args = {...}
-    for i = 1, #args do
-        if (args[i]) then
-            outputToConsole(string.format('[Error] %s', tostring(args[i])))
-        end
-    end
-end
-
-local function warn(...)
-    local args = {...}
-    for i = 1, #args do
-        if (args[i]) then
-            outputToConsole(string.format('[Warn] %s', tostring(args[i])))
-        end
-    end
-end
-)";
-
     QFile file = QFile(tfRootFolder + "/Executor/script.lua");
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
-        out << luaEnv << "\n" << text;
+        out << Lua::Env << "\n" << text;
         file.close();
     }
 
-    qDebug() << "Executed!";
+    //qDebug() << "Executed!";
 }
 
 void MainWindow::GetMenuInt(const QString &text, std::function<void(int)> callback) {
-    QString code = QString(R"(local value = gui.GetValue("%1")
-local file <close> = io.open("Executor/returnvalue.txt", "w")
-if file then
-    file:write(value)
-    file:flush()
-    file:close()
-end)").arg(text);
-
     auto *watcher = new QFileSystemWatcher(this);
     QString retFile = tfRootFolder + "/Executor/returnvalue.txt";
     watcher->addPath(retFile);
@@ -304,20 +361,10 @@ end)").arg(text);
                 callback(result);
             });
 
-    Execute(code);
+    Execute(Lua::GetMenuCode.arg(text));
 }
 
 void MainWindow::GetMenuString(const QString &text, std::function<void(QString)> callback) {
-    QString code = QString(R"(
-local value = gui.GetValue("%1")
-local file <close> = io.open("Executor/returnvalue.txt", "w")
-if file then
-    file:write(value)
-    file:flush()
-    file:close()
-end
-)").arg(text);
-
     auto *watcher = new QFileSystemWatcher(this);
     QString retFile = tfRootFolder + "/Executor/returnvalue.txt";
     watcher->addPath(retFile);
@@ -335,5 +382,5 @@ end
                 callback(result);
             });
 
-    Execute(code);
+    Execute(Lua::GetMenuCode.arg(text));
 }
