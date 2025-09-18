@@ -53,7 +53,7 @@ jobs:
     
     - uses: actions/upload-artifact@v4
       with:
-        name: LuaRunner-${{ matrix.os }}-${{ matrix.build_type }}
+        name: LuaRunner-${{ matrix.os }}
         path: |
           ${{ steps.strings.outputs.build-output-dir }}/Release/lbox-lua-runner.exe
 
