@@ -77,3 +77,5 @@ jobs:
           ${{ steps.strings.outputs.build-output-dir }}/Release/lbox-lua-runner.exe
 
           ${{ steps.strings.outputs.build-output-dir }}/lbox-lua-runner
+
+          ${{ github.workspace }}/runner-helper.lua

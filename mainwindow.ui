@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>762</width>
-    <height>422</height>
+    <height>501</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -81,54 +81,96 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QPlainTextEdit" name="plainTextEdit">
-        <property name="styleSheet">
-         <string notr="true"/>
+       <widget class="QTabWidget" name="tabWidget">
+        <property name="currentIndex">
+         <number>1</number>
         </property>
-        <property name="lineWrapMode">
-         <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
-        </property>
-        <property name="tabStopDistance">
-         <double>10.000000000000000</double>
-        </property>
-        <property name="placeholderText">
-         <string>Lua code here</string>
-        </property>
+        <widget class="QWidget" name="tab">
+         <attribute name="title">
+          <string>Console</string>
+         </attribute>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QTextEdit" name="console">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Console</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_2">
+         <attribute name="title">
+          <string>Editor</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
+           <widget class="QPlainTextEdit" name="plainTextEdit">
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
+            <property name="lineWrapMode">
+             <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
+            </property>
+            <property name="tabStopDistance">
+             <double>10.000000000000000</double>
+            </property>
+            <property name="placeholderText">
+             <string>Lua code here</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </item>
       <item>
-       <widget class="QListView" name="listView">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="styleSheet">
-         <string notr="true"/>
-        </property>
-        <property name="iconSize">
-         <size>
-          <width>24</width>
-          <height>24</height>
-         </size>
-        </property>
-        <property name="spacing">
-         <number>4</number>
-        </property>
-        <property name="gridSize">
-         <size>
-          <width>10</width>
-          <height>20</height>
-         </size>
-        </property>
-       </widget>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Script List</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignmentFlag::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QListView" name="listView">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>24</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -236,7 +278,6 @@
    </widget>
    <addaction name="menuFile"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="actionLoad_File">
    <property name="text">
     <string>Load File</string>

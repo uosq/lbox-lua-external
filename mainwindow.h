@@ -22,6 +22,8 @@ public:
     void Execute(const QString &text);
     void GetMenuInt(const QString &text, std::function<void(int)> callback);
     void GetMenuString(const QString &text, std::function<void(QString)> callback);
+    void AppendConsoleWithColor(const QString &text, QColor color);
+    void AppendConsole(const QString &text);
 
 private slots:
     void on_execBtn_clicked();

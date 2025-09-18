@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 
+#include "consolesyntaxhighlight.h"
 #include "luasyntaxhighlight.h"
 #include "luascripts.h"
 
@@ -21,17 +22,22 @@
 
 #include <QVBoxLayout>
 #include <QLabel>
+#include <QFileSystemModel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-    setWindowFlag(Qt::WindowStaysOnTopHint, 1);
+    setWindowFlag(Qt::WindowStaysOnTopHint, true);
     ui->setupUi(this);
     new LuaSyntaxHighlighter(ui->plainTextEdit->document());
+    new ConsoleSyntaxHighlight(ui->console->document());
+
+    AppendConsole("Startup");
+    AppendConsole("Will try to load previous data");
 
     QFile settingsFile("settings.txt");
-    if (settingsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (settingsFile.exists() && settingsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QString rootFolder = QString::fromUtf8(settingsFile.readLine()).trimmed();
         QString listFolder = QString::fromUtf8(settingsFile.readLine()).trimmed();
 
@@ -41,9 +47,13 @@ MainWindow::MainWindow(QWidget *parent)
         LoadListFolder();
 
         settingsFile.close();
+
+        AppendConsoleWithColor("Data loaded successfully", QColor(128, 255, 0));
     }
 
     if (tfRootFolder.isEmpty()) {
+        AppendConsole("User has no previous data saved, will ask for root folder");
+
         QDialog *dialog = new QDialog(this);
         dialog->setWindowTitle("First Startup");
         QVBoxLayout *layout = new QVBoxLayout(dialog);
@@ -65,6 +75,42 @@ MainWindow::MainWindow(QWidget *parent)
         dialog->setLayout(layout);
         dialog->exec();
     }
+
+    QFileSystemWatcher *watcher1 = new QFileSystemWatcher(this);
+    QString consolePath = tfRootFolder + "/Executor/console.txt";
+    watcher1->addPath(consolePath);
+    connect(watcher1, &QFileSystemWatcher::fileChanged,
+            this, [this, consolePath, watcher1]() {
+                // Read only the last line of the file
+                QFile file(consolePath);
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    QTextStream in(&file);
+                    QString lastLine;
+                    QString currentLine;
+
+                    // Read all lines and keep track of the last non-empty one
+                    while (!in.atEnd()) {
+                        currentLine = in.readLine();
+                        if (!currentLine.isEmpty()) {
+                            lastLine = currentLine;
+                        }
+                    }
+
+                    if (!lastLine.isEmpty()) {
+                        AppendConsole(lastLine);
+                    }
+                    file.close();
+                }
+
+                // QFileSystemWatcher sometimes stops after a change, re-add the file
+                if (!watcher1->files().contains(consolePath)) {
+                    watcher1->addPath(consolePath);
+                }
+            });
+
+
+    AppendConsoleWithColor("Ready!", QColor(0, 255, 174));
+    AppendConsoleWithColor("You can run code now :)", QColor(255, 255, 255));
 }
 
 MainWindow::~MainWindow()
@@ -156,12 +202,18 @@ void MainWindow::on_actionLoad_Folder_triggered() {
 }
 
 void MainWindow::on_listView_clicked(const QModelIndex &index) {
+    if (listViewLoadedFolder.isEmpty())
+        return;
+
     QString fileName = index.data(Qt::DisplayRole).toString();
+    if (fileName.isEmpty())
+        return;
 
     QString fullPath = listViewLoadedFolder + "/" + fileName;
 
     QFile file(fullPath);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+
+    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
         QString content = in.readAll();
         ui->plainTextEdit->setPlainText(content);
@@ -178,6 +230,9 @@ void MainWindow::on_actionSet_TF2_Root_Folder_triggered() {
 
 void MainWindow::on_saveBtn_clicked() {
     QString filePath = QFileDialog::getSaveFileName(this, "Save File", "", "All files (*.*);;Lua files (*.lua)");
+    if (filePath.isEmpty())
+        return;
+
     QFile file = QFile(filePath);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         file.write(ui->plainTextEdit->toPlainText().toStdString().c_str());
@@ -186,25 +241,51 @@ void MainWindow::on_saveBtn_clicked() {
 }
 
 void MainWindow::Execute(const QString &text) {
-    if (tfRootFolder == "" || tfRootFolder.isEmpty()) {
+    AppendConsole("Running code...");
+
+    if (tfRootFolder.isEmpty()) {
         QMessageBox::critical(this, "Error!", tr("You have to select a root folder!\nFile -> Set TF2 Root Folder"));
+        AppendConsole("Error! You didn't select a root folder!");
         return;
     }
 
-    QFile file = QFile(tfRootFolder + "/Executor/script.tmp");
+    // Create the Scripts directory if it doesn't exist
+    QString scriptsDir = tfRootFolder + "/Executor/Scripts";
+    QDir dir;
+    if (!dir.exists(scriptsDir)) {
+        if (!dir.mkpath(scriptsDir)) {
+            QMessageBox::critical(this, "Error!", tr("Failed to create Scripts directory!"));
+            AppendConsole("Error! Failed to create Scripts directory!");
+            return;
+        }
+    }
+
+    // Find the next available script number
+    int scriptNumber = 0;
+    QString fileName;
+    do {
+        fileName = QString("%1/script-%2.lua").arg(scriptsDir).arg(scriptNumber);
+        scriptNumber++;
+    } while (QFile::exists(fileName));
+
+    // Create and write to the new script file
+    QFile file(fileName);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
         out << Lua::Env << "\n" << text;
         file.close();
-        QFile::rename(file.fileName(), tfRootFolder + "/Executor/script.lua");
-    }
 
-    //qDebug() << "Executed!";
+        AppendConsole(QString("Code executed!"));
+    } else {
+        QMessageBox::critical(this, "Error!", tr("Failed to create script file!"));
+        AppendConsole("Error! Failed to create script file!");
+    }
 }
 
 void MainWindow::GetMenuInt(const QString &text, std::function<void(int)> callback) {
     auto *watcher = new QFileSystemWatcher(this);
     QString retFile = tfRootFolder + "/Executor/returnvalue.txt";
+
     watcher->addPath(retFile);
 
     connect(watcher, &QFileSystemWatcher::fileChanged, this,
@@ -226,6 +307,7 @@ void MainWindow::GetMenuInt(const QString &text, std::function<void(int)> callba
 void MainWindow::GetMenuString(const QString &text, std::function<void(QString)> callback) {
     auto *watcher = new QFileSystemWatcher(this);
     QString retFile = tfRootFolder + "/Executor/returnvalue.txt";
+
     watcher->addPath(retFile);
 
     connect(watcher, &QFileSystemWatcher::fileChanged, this,
@@ -242,4 +324,17 @@ void MainWindow::GetMenuString(const QString &text, std::function<void(QString)>
             });
 
     Execute(Lua::GetMenuCode.arg(text));
+}
+
+void MainWindow::AppendConsoleWithColor(const QString &text, QColor color) {
+    QTextCharFormat format;
+    format.setForeground(color);
+
+    QTextCursor cursor(ui->console->document());
+    cursor.movePosition(QTextCursor::End);
+    cursor.insertText("\n" + text, format);
+}
+
+void MainWindow::AppendConsole(const QString &text) {
+    ui->console->append(text);
 }
