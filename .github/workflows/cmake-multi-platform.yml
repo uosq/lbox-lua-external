@@ -100,10 +100,9 @@ jobs:
           --plugin qt \
           --output appimage
 
-        # zip AppImage + helper Lua script (files only)
+        # zip AppImage + helper Lua script (files only, no cp)
         ZIP_PATH="${{ github.workspace }}/LuaRunner-linux.zip"
-        cp ${{ github.workspace }}/runner-helper.lua .
-        zip -j "$ZIP_PATH" *.AppImage runner-helper.lua
+        zip -j "$ZIP_PATH" AppImage-lbox-lua-runner* "${{ github.workspace }}/runner-helper.lua"
         echo "Created $ZIP_PATH"
 
     # ---- Windows: Deploy Qt + zip ----
