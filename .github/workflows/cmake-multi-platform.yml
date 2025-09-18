@@ -12,26 +12,34 @@ jobs:
 
     strategy:
       fail-fast: false
-
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        c_compiler: [clang, cl]
+        c_compiler: [gcc, cl]
         include:
           - os: windows-latest
             c_compiler: cl
             cpp_compiler: cl
           - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+            c_compiler: gcc
+            cpp_compiler: g++
         exclude:
           - os: windows-latest
-            c_compiler: clang
+            c_compiler: gcc
           - os: ubuntu-latest
             c_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
+
+    # ---- Cache Qt ----
+    - name: Cache Qt
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/Qt
+        key: qt-${{ runner.os }}-v4.3.0
+        restore-keys: qt-${{ runner.os }}-
+
     - uses: jurplel/install-qt-action@v4.3.0
 
     - name: Set reusable strings
@@ -51,7 +59,12 @@ jobs:
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-    # ---- Linux: Package AppImage + zip with placeholder icon ----
+    # ---- Linux: Install ImageMagick ----
+    - name: Install ImageMagick
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+    # ---- Linux: Package AppImage + strip + zip ----
     - name: Package AppImage
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -70,15 +83,17 @@ jobs:
         Categories=Utility;
         EOF
 
-        # create placeholder 256x256 PNG icon
+        # placeholder 256x256 transparent PNG icon
         mkdir -p $APPDIR/usr/share/icons/hicolor/256x256/apps
-        apt-get update && apt-get install -y imagemagick
         convert -size 256x256 canvas:transparent $APPDIR/usr/share/icons/hicolor/256x256/apps/lbox-lua-runner.png
 
         # download linuxdeploy + Qt plugin
         wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
         wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
         chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+        # strip all ELF binaries inside AppDir to reduce AppImage size
+        find $APPDIR -type f -exec file {} \; | grep "ELF .* executable" | cut -d: -f1 | xargs -r strip --strip-unneeded || true
 
         # create AppImage
         ./linuxdeploy-x86_64.AppImage --appdir $APPDIR \
@@ -91,7 +106,7 @@ jobs:
         zip -j "$ZIP_PATH" *.AppImage runner-helper.lua
         echo "Created $ZIP_PATH"
 
-    # ---- Windows: Deploy Qt + zip without nested folder ----
+    # ---- Windows: Deploy Qt + zip ----
     - name: Deploy Qt (Windows)
       if: matrix.os == 'windows-latest'
       shell: pwsh
@@ -100,10 +115,10 @@ jobs:
         $qtBin = (Get-Command qmake).Source | Split-Path
         & "$qtBin\windeployqt.exe" --release $exePath
 
-        # copy Lua helper into the same folder
+        # copy Lua helper
         Copy-Item "${{ github.workspace }}\runner-helper.lua" (Split-Path $exePath)
 
-        # zip only the files inside the folder, avoid nested folder
+        # zip files directly
         $zipPath = "${{ github.workspace }}\LuaRunner-windows.zip"
         $files = Get-ChildItem -Path (Split-Path $exePath) -File
         Compress-Archive -Path $files.FullName -DestinationPath $zipPath -Force
