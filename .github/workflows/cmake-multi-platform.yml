@@ -50,13 +50,66 @@ jobs:
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-    
+
+    # ---- AppImage packaging + zip (Linux only) ----
+    - name: Package AppImage
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        APPDIR=AppDir
+        mkdir -p $APPDIR/usr/bin
+        cp ${{ steps.strings.outputs.build-output-dir }}/lbox-lua-runner $APPDIR/usr/bin/
+        strip $APPDIR/usr/bin/lbox-lua-runner
+
+        mkdir -p $APPDIR/usr/share/applications
+        cat > $APPDIR/usr/share/applications/lbox-lua-runner.desktop <<EOF
+        [Desktop Entry]
+        Name=LuaRunner
+        Exec=lbox-lua-runner
+        Icon=lbox-lua-runner
+        Type=Application
+        Categories=Utility;
+        EOF
+
+        mkdir -p $APPDIR/usr/share/icons/hicolor/256x256/apps
+        # cp path/to/icon.png $APPDIR/usr/share/icons/hicolor/256x256/apps/lbox-lua-runner.png
+
+        # download linuxdeploy + Qt plugin
+        wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+        wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+        chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+        # create AppImage
+        ./linuxdeploy-x86_64.AppImage --appdir $APPDIR \
+          --plugin qt \
+          --output appimage
+
+        # zip AppImage + helper Lua script
+        ZIP_PATH="${{ github.workspace }}/LuaRunner-linux.zip"
+        cp ${{ github.workspace }}/runner-helper.lua .
+        zip -j "$ZIP_PATH" *.AppImage runner-helper.lua
+        echo "Created $ZIP_PATH"
+
+    # ---- Bundle Qt + zip (Windows only) ----
+    - name: Deploy Qt (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        $exePath = "${{ steps.strings.outputs.build-output-dir }}\\Release\\lbox-lua-runner.exe"
+        $qtBin = (Get-Command qmake).Source | Split-Path
+        & "$qtBin\\windeployqt.exe" --release $exePath
+
+        # copy Lua helper into same folder
+        Copy-Item "${{ github.workspace }}\\runner-helper.lua" (Split-Path $exePath)
+
+        # create zip
+        $zipPath = "${{ github.workspace }}\\LuaRunner-windows.zip"
+        Compress-Archive -Path (Split-Path $exePath) -DestinationPath $zipPath -Force
+        Write-Output "Created $zipPath"
+
+    # ---- Upload artifacts ----
     - uses: actions/upload-artifact@v4
       with:
         name: LuaRunner-${{ matrix.os }}
         path: |
-          ${{ steps.strings.outputs.build-output-dir }}/Release/lbox-lua-runner.exe
-
-          ${{ github.workspace }}/runner-helper.lua
-
-          ${{ steps.strings.outputs.build-output-dir }}/lbox-lua-runner
+          ${{ github.workspace }}/LuaRunner-linux.zip
+          ${{ github.workspace }}/LuaRunner-windows.zip
