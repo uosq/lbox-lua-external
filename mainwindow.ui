@@ -104,7 +104,8 @@ color: rgb(255, 255, 255);</string>
             </property>
             <property name="styleSheet">
              <string notr="true">background-color: rgb(33, 33, 33);
-color: rgb(255, 255, 255);</string>
+color: rgb(255, 255, 255);
+border-color: rgb(62, 62, 62);</string>
             </property>
             <property name="readOnly">
              <bool>true</bool>

@@ -33,8 +33,8 @@ MainWindow::MainWindow(QWidget *parent)
     new LuaSyntaxHighlighter(ui->plainTextEdit->document());
     new ConsoleSyntaxHighlight(ui->console->document());
 
-    AppendConsole("Startup");
-    AppendConsole("Will try to load previous data");
+    AppendConsole("Startup\n", QColor(100, 100, 255));
+    AppendConsole("Will try to load previous data\n");
 
     QFile settingsFile("settings.txt");
     if (settingsFile.exists() && settingsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -48,11 +48,12 @@ MainWindow::MainWindow(QWidget *parent)
 
         settingsFile.close();
 
-        AppendConsoleWithColor("Data loaded successfully", QColor(128, 255, 0));
+        AppendConsole("Data loaded successfully\n", QColor(128, 255, 0));
     }
 
     if (tfRootFolder.isEmpty()) {
-        AppendConsole("User has no previous data saved, will ask for root folder");
+        AppendConsole("User has no previous data saved", QColor(220, 20, 60));
+        AppendConsole(", will ask for root folder\n", QColor(255, 255, 255));
 
         QDialog *dialog = new QDialog(this);
         dialog->setWindowTitle("First Startup");
@@ -109,8 +110,8 @@ MainWindow::MainWindow(QWidget *parent)
             });
 
 
-    AppendConsoleWithColor("Ready!", QColor(0, 255, 174));
-    AppendConsoleWithColor("You can run code now :)", QColor(255, 255, 255));
+    AppendConsole("Ready!\n", QColor(0, 255, 174));
+    AppendConsole("You can run code now :)\n", QColor(255, 255, 255));
 }
 
 MainWindow::~MainWindow()
@@ -241,11 +242,11 @@ void MainWindow::on_saveBtn_clicked() {
 }
 
 void MainWindow::Execute(const QString &text) {
-    AppendConsole("Running code...");
+    AppendConsole("Running code...\n");
 
     if (tfRootFolder.isEmpty()) {
         QMessageBox::critical(this, "Error!", tr("You have to select a root folder!\nFile -> Set TF2 Root Folder"));
-        AppendConsole("Error! You didn't select a root folder!");
+        AppendConsole("Error! You didn't select a root folder!\n");
         return;
     }
 
@@ -255,7 +256,7 @@ void MainWindow::Execute(const QString &text) {
     if (!dir.exists(scriptsDir)) {
         if (!dir.mkpath(scriptsDir)) {
             QMessageBox::critical(this, "Error!", tr("Failed to create Scripts directory!"));
-            AppendConsole("Error! Failed to create Scripts directory!");
+            AppendConsole("Error! Failed to create Scripts directory!\n");
             return;
         }
     }
@@ -275,10 +276,10 @@ void MainWindow::Execute(const QString &text) {
         out << Lua::Env << "\n" << text;
         file.close();
 
-        AppendConsole(QString("Code executed!"));
+        AppendConsole(QString("Code executed!\n"));
     } else {
         QMessageBox::critical(this, "Error!", tr("Failed to create script file!"));
-        AppendConsole("Error! Failed to create script file!");
+        AppendConsole("Error! Failed to create script file!\n");
     }
 }
 
@@ -326,24 +327,15 @@ void MainWindow::GetMenuString(const QString &text, std::function<void(QString)>
     Execute(Lua::GetMenuCode.arg(text));
 }
 
-void MainWindow::AppendConsoleWithColor(const QString &text, QColor color) {
+void MainWindow::AppendConsole(const QString &text, QColor color) {
     QTextCharFormat format;
     format.setForeground(color);
 
     QTextCursor cursor(ui->console->document());
     cursor.movePosition(QTextCursor::End);
-    cursor.insertText(text + "\n", format);
+    cursor.insertText(text, format);
 
     QTextCharFormat resetFormat;
     resetFormat.setForeground(ui->console->palette().color(QPalette::Text));
     cursor.setCharFormat(resetFormat);
-}
-
-void MainWindow::AppendConsole(const QString &text) {
-    QTextCursor cursor(ui->console->document());
-    cursor.movePosition(QTextCursor::End);
-
-    QTextCharFormat format;
-    format.setForeground(ui->console->palette().color(QPalette::Text));
-    cursor.insertText(text + "\n", format);
 }
