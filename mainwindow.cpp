@@ -332,9 +332,18 @@ void MainWindow::AppendConsoleWithColor(const QString &text, QColor color) {
 
     QTextCursor cursor(ui->console->document());
     cursor.movePosition(QTextCursor::End);
-    cursor.insertText("\n" + text, format);
+    cursor.insertText(text + "\n", format);
+
+    QTextCharFormat resetFormat;
+    resetFormat.setForeground(ui->console->palette().color(QPalette::Text));
+    cursor.setCharFormat(resetFormat);
 }
 
 void MainWindow::AppendConsole(const QString &text) {
-    ui->console->append(text);
+    QTextCursor cursor(ui->console->document());
+    cursor.movePosition(QTextCursor::End);
+
+    QTextCharFormat format;
+    format.setForeground(ui->console->palette().color(QPalette::Text));
+    cursor.insertText(text + "\n", format);
 }
