@@ -51,7 +51,7 @@ jobs:
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-    # ---- Linux: Package AppImage + zip ----
+    # ---- Linux: Package AppImage + zip with placeholder icon ----
     - name: Package AppImage
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -70,18 +70,22 @@ jobs:
         Categories=Utility;
         EOF
 
+        # create placeholder 256x256 PNG icon
+        mkdir -p $APPDIR/usr/share/icons/hicolor/256x256/apps
+        apt-get update && apt-get install -y imagemagick
+        convert -size 256x256 canvas:transparent $APPDIR/usr/share/icons/hicolor/256x256/apps/lbox-lua-runner.png
+
         # download linuxdeploy + Qt plugin
         wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
         wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
         chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
-        # create AppImage without requiring an icon
+        # create AppImage
         ./linuxdeploy-x86_64.AppImage --appdir $APPDIR \
           --plugin qt \
-          --output appimage \
-          --no-icon
+          --output appimage
 
-        # zip AppImage + helper Lua script (files only, no nested folders)
+        # zip AppImage + helper Lua script (files only)
         ZIP_PATH="${{ github.workspace }}/LuaRunner-linux.zip"
         cp ${{ github.workspace }}/runner-helper.lua .
         zip -j "$ZIP_PATH" *.AppImage runner-helper.lua
