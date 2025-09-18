@@ -111,14 +111,18 @@ jobs:
       run: |
         $exePath = "${{ steps.strings.outputs.build-output-dir }}\Release\lbox-lua-runner.exe"
         $qtBin = (Get-Command qmake).Source | Split-Path
-        & "$qtBin\windeployqt.exe" --release $exePath
-
-        # copy Lua helper
+        & "$qtBin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw $exePath
+        $platformsDir = Join-Path (Split-Path $exePath) "platforms"
+        if (!(Test-Path $platformsDir)) {
+            Write-Error "Platforms directory not created by windeployqt"
+            exit 1
+        }
+        Write-Output "Contents of platforms directory:"
+        Get-ChildItem $platformsDir
         Copy-Item "${{ github.workspace }}\runner-helper.lua" (Split-Path $exePath)
-
-        # zip files directly
         $zipPath = "${{ github.workspace }}\LuaRunner-windows.zip"
-        $files = Get-ChildItem -Path (Split-Path $exePath) -File
+        $deployDir = Split-Path $exePath
+        $files = Get-ChildItem -Path $deployDir -Recurse
         Compress-Archive -Path $files.FullName -DestinationPath $zipPath -Force
         Write-Output "Created $zipPath"
 
