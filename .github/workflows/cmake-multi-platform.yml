@@ -100,12 +100,8 @@ jobs:
           --plugin qt \
           --output appimage
 
-        # find the generated AppImage (there should be exactly one)
-        APPIMAGE=$(find . -maxdepth 1 -type f -name "*.AppImage")
-        echo "Found AppImage: $APPIMAGE"
-
         ZIP_PATH="${{ github.workspace }}/LuaRunner-linux.zip"
-        zip -j "$ZIP_PATH" "$APPIMAGE" "${{ github.workspace }}/runner-helper.lua"
+        zip -j "$ZIP_PATH" "LuaRunner-x86_64.AppImage" "${{ github.workspace }}/runner-helper.lua"
         echo "Created $ZIP_PATH"
 
     # ---- Windows: Deploy Qt + zip ----
