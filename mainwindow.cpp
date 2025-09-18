@@ -2,7 +2,6 @@
 #include "./ui_mainwindow.h"
 
 #include "luasyntaxhighlight.h"
-#include "consolesyntaxhighlight.h"
 #include "luascripts.h"
 
 #include <QFileDialog>
@@ -20,6 +19,9 @@
 
 #include <QInputDialog>
 
+#include <QVBoxLayout>
+#include <QLabel>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -27,7 +29,6 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowFlag(Qt::WindowStaysOnTopHint, 1);
     ui->setupUi(this);
     new LuaSyntaxHighlighter(ui->plainTextEdit->document());
-    new ConsoleSyntaxHighlight(ui->consoleTextEdit->document());
 
     QFile settingsFile("settings.txt");
     if (settingsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -40,158 +41,30 @@ MainWindow::MainWindow(QWidget *parent)
         LoadListFolder();
 
         settingsFile.close();
-    } else {
-        qDebug() << "Couldn't open settings.txt!";
     }
 
-    QString filePath = tfRootFolder + "/Executor/console.txt";
-    QString debugFilePath = tfRootFolder + "/Executor/debug.txt";
+    if (tfRootFolder.isEmpty()) {
+        QDialog *dialog = new QDialog(this);
+        dialog->setWindowTitle("First Startup");
+        QVBoxLayout *layout = new QVBoxLayout(dialog);
+        layout->addWidget(new QLabel("Please select your TF2's root folder"));
+        layout->addWidget(new QLabel("(The folder that has the file tf_win64.exe)"));
 
-    QFileSystemWatcher *watcher1 = new QFileSystemWatcher(this);
-    QFileSystemWatcher *watcher2 = new QFileSystemWatcher(this);
-    watcher1->addPath(debugFilePath);
-    watcher2->addPath(filePath);
+        QPushButton *button = new QPushButton("Select Folder", dialog);
 
-    connect(watcher1, &QFileSystemWatcher::fileChanged,
-            this, [this, debugFilePath, watcher1]() {
-                QFile file(debugFilePath);
-                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                    QTextStream in(&file);
-
-                    // Clear previous text first
-                    ui->plainTextEdit_2->clear();
-
-                    // Append line by line
-                    while (!in.atEnd()) {
-                        QString line = in.readLine();
-                        ui->plainTextEdit_2->appendPlainText(line);
-                    }
-
-                    file.close();
-                }
-
-                // QFileSystemWatcher sometimes stops after a change, re-add the file
-                if (!watcher1->files().contains(debugFilePath))
-                    watcher1->addPath(debugFilePath);
-            });
-
-    connect(watcher2, &QFileSystemWatcher::fileChanged,
-            this, [this, filePath, watcher2]() {
-                QFile file(filePath);
-                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                    QTextStream in(&file);
-
-                    // Clear previous text first
-                    ui->consoleTextEdit->clear();
-
-                    // Append line by line
-                    // This makes the file, when updated, go to the last line instead of the first one
-                    while (!in.atEnd()) {
-                        QString line = in.readLine();
-                        ui->consoleTextEdit->append(line);
-                    }
-
-                    file.close();
-                }
-
-                // QFileSystemWatcher sometimes stops after a change, re-add the file
-                if (!watcher2->files().contains(filePath))
-                    watcher2->addPath(filePath);
-            });
-
-    manager = new QNetworkAccessManager(this);
-    connect(manager, &QNetworkAccessManager::finished, this, [=](QNetworkReply *reply) {
-        if (reply->error()) {
-            qDebug() << reply->errorString();
-            return;
-        }
-
-        QByteArray byteArray = reply->readAll();
-        QJsonParseError parseError;
-        QJsonDocument doc = QJsonDocument::fromJson(byteArray, &parseError);
-
-        if (parseError.error != QJsonParseError::NoError) {
-            qWarning() << "JSON parse error:" << parseError.errorString();
-        } else {
-            if (doc.isArray()) {
-                QJsonArray arr = doc.array();
-
-                // Get the scroll area contents widget
-                QWidget *container = ui->scrollAreaWidgetContents;
-                QVBoxLayout *layout = qobject_cast<QVBoxLayout *>(container->layout());
-                if (!layout) {
-                    layout = new QVBoxLayout(container);
-                    container->setLayout(layout);
-                }
-
-                // Clear any previous buttons if necessary
-                QLayoutItem *child;
-                while ((child = layout->takeAt(0)) != nullptr) {
-                    if (child->widget()) {
-                        delete child->widget();
-                    }
-                    delete child;
-                }
-
-                for (const QJsonValue &val : std::as_const(arr)) {
-                    QJsonObject obj = val.toObject();
-                    QString name = obj["name"].toString();
-                    QString manifestUrl = obj["download_url"].toString();
-
-                    if (name.endsWith(".json", Qt::CaseInsensitive)) {
-                        name.chop(5); // remove ".json"
-                    }
-
-                    if (name.isEmpty() || manifestUrl.isEmpty())
-                        continue;
-
-                    QPushButton *btn = new QPushButton(name, container);
-                    layout->addWidget(btn);
-
-                    connect(btn, &QPushButton::clicked, this, [this, manifestUrl]() {
-                        QNetworkRequest manifestRequest;
-                        manifestRequest.setUrl(QUrl(manifestUrl));
-
-                        QNetworkReply *manifestReply = manager->get(manifestRequest);
-
-                        connect(manifestReply, &QNetworkReply::finished, this, [this, manifestReply]() {
-                            manifestReply->deleteLater();
-
-                            if (manifestReply->error()) {
-                                qDebug() << "Manifest request error:" << manifestReply->errorString();
-                                return;
-                            }
-
-                            QByteArray manifestData = manifestReply->readAll();
-                            QJsonParseError parseError;
-                            QJsonDocument manifestDoc = QJsonDocument::fromJson(manifestData, &parseError);
-
-                            if (parseError.error != QJsonParseError::NoError) {
-                                qWarning() << "Manifest JSON parse error:" << parseError.errorString();
-                                return;
-                            }
-
-                            if (manifestDoc.isObject()) {
-                                QJsonObject manifestObj = manifestDoc.object();
-                                QString luaUrl = manifestObj["url"].toString();
-                                if (!luaUrl.isEmpty()) {
-                                    QString luaCode = QString("load(http.Get(\"%1\"))()").arg(luaUrl);
-                                    Execute(luaCode);
-                                } else {
-                                    qWarning() << "No 'url' field in manifest JSON";
-                                }
-                            }
-                        });
-                    });
-                }
-
-                layout->addStretch(); // push everything to top
+        connect(button, &QPushButton::clicked, this, [this, dialog](void) {
+            QString filePath = QFileDialog::getExistingDirectory(this, tr("Select TF2's Root Folder"));
+            if (!filePath.isEmpty()) {
+                tfRootFolder = filePath;
+                dialog->close();
             }
-        }
-    });
+        });
 
-    request.setUrl(QUrl("https://api.github.com/repos/uosq/cheese-bread-pkgs/contents/packages"));
-    manager->get(request);
+        layout->addWidget(button);
+
+        dialog->setLayout(layout);
+        dialog->exec();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -204,22 +77,7 @@ MainWindow::~MainWindow()
         settingsFile.close();
     }
 
-    QFile console(tfRootFolder + "/Executor/console.txt");
-    if (console.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&console);
-        out << "";
-        console.close();
-    }
-
-    QFile debug(tfRootFolder + "/Executor/debug.txt");
-    if(debug.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&debug);
-        out << "";
-        debug.close();
-    }
-
     delete ui;
-    delete manager;
 }
 
 void MainWindow::on_execBtn_clicked() {
@@ -333,11 +191,12 @@ void MainWindow::Execute(const QString &text) {
         return;
     }
 
-    QFile file = QFile(tfRootFolder + "/Executor/script.lua");
+    QFile file = QFile(tfRootFolder + "/Executor/script.tmp");
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
         out << Lua::Env << "\n" << text;
         file.close();
+        QFile::rename(file.fileName(), tfRootFolder + "/Executor/script.lua");
     }
 
     //qDebug() << "Executed!";

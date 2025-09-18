@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="windowModality">
+   <enum>Qt::WindowModality::NonModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>792</width>
-    <height>445</height>
+    <width>762</width>
+    <height>422</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,12 +21,18 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>801</width>
-    <height>445</height>
+    <width>9999999</width>
+    <height>999999</height>
    </size>
   </property>
   <property name="focusPolicy">
    <enum>Qt::FocusPolicy::NoFocus</enum>
+  </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::ContextMenuPolicy::DefaultContextMenu</enum>
+  </property>
+  <property name="acceptDrops">
+   <bool>true</bool>
   </property>
   <property name="windowTitle">
    <string>LUA Runner</string>
@@ -31,8 +40,11 @@
   <property name="windowOpacity">
    <double>1.000000000000000</double>
   </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
+  </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(26, 26, 26);</string>
+   <string notr="true"/>
   </property>
   <property name="iconSize">
    <size>
@@ -42,6 +54,9 @@
   </property>
   <property name="toolButtonStyle">
    <enum>Qt::ToolButtonStyle::ToolButtonTextOnly</enum>
+  </property>
+  <property name="documentMode">
+   <bool>false</bool>
   </property>
   <property name="tabShape">
    <enum>QTabWidget::TabShape::Rounded</enum>
@@ -53,272 +68,162 @@
    <set>QMainWindow::DockOption::AllowTabbedDocks|QMainWindow::DockOption::AnimatedDocks</set>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTabWidget" name="tabWidget">
-    <property name="geometry">
-     <rect>
-      <x>6</x>
-      <y>0</y>
-      <width>771</width>
-      <height>401</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">border-color: rgba(191, 64, 64, 0);</string>
-    </property>
-    <property name="tabShape">
-     <enum>QTabWidget::TabShape::Rounded</enum>
-    </property>
-    <property name="currentIndex">
-     <number>3</number>
-    </property>
-    <widget class="QWidget" name="tab">
-     <attribute name="title">
-      <string>Console</string>
-     </attribute>
-     <widget class="QTextEdit" name="consoleTextEdit">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>20</y>
-        <width>761</width>
-        <height>341</height>
-       </rect>
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="spacing">
+       <number>6</number>
       </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgb(35, 35, 35);
-border-color: rgb(246, 245, 244);
-color: rgb(255, 255, 255);</string>
+      <property name="leftMargin">
+       <number>0</number>
       </property>
-      <property name="autoFormatting">
-       <set>QTextEdit::AutoFormattingFlag::AutoNone</set>
+      <property name="rightMargin">
+       <number>0</number>
       </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-      <property name="placeholderText">
-       <string>Your output is here</string>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_2">
-     <attribute name="title">
-      <string>Editor</string>
-     </attribute>
-     <widget class="QPlainTextEdit" name="plainTextEdit">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>20</y>
-        <width>551</width>
-        <height>311</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgb(35, 35, 35);
-color: rgb(255, 255, 255);
-border-color: rgb(255, 255, 255);</string>
-      </property>
-      <property name="lineWrapMode">
-       <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
-      </property>
-      <property name="tabStopDistance">
-       <double>10.000000000000000</double>
-      </property>
-      <property name="placeholderText">
-       <string>Lua code here</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label">
-      <property name="geometry">
-       <rect>
-        <x>630</x>
-        <y>0</y>
-        <width>91</width>
-        <height>18</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Script List</string>
-      </property>
-     </widget>
-     <widget class="QListView" name="listView">
-      <property name="geometry">
-       <rect>
-        <x>570</x>
-        <y>20</y>
-        <width>201</width>
-        <height>311</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgb(35, 35, 35);
-border-color: rgb(255, 255, 255);</string>
-      </property>
-      <property name="iconSize">
-       <size>
-        <width>24</width>
-        <height>24</height>
-       </size>
-      </property>
+      <item>
+       <widget class="QPlainTextEdit" name="plainTextEdit">
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="lineWrapMode">
+         <enum>QPlainTextEdit::LineWrapMode::NoWrap</enum>
+        </property>
+        <property name="tabStopDistance">
+         <double>10.000000000000000</double>
+        </property>
+        <property name="placeholderText">
+         <string>Lua code here</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListView" name="listView">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>24</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="spacing">
+         <number>4</number>
+        </property>
+        <property name="gridSize">
+         <size>
+          <width>10</width>
+          <height>20</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="spacing">
        <number>4</number>
       </property>
-      <property name="gridSize">
-       <size>
-        <width>10</width>
-        <height>20</height>
-       </size>
+      <property name="sizeConstraint">
+       <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
       </property>
-     </widget>
-     <widget class="QPushButton" name="saveBtn">
-      <property name="geometry">
-       <rect>
-        <x>190</x>
-        <y>340</y>
-        <width>80</width>
-        <height>26</height>
-       </rect>
+      <property name="leftMargin">
+       <number>0</number>
       </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+      <property name="rightMargin">
+       <number>0</number>
       </property>
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Save File</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="clearBtn">
-      <property name="geometry">
-       <rect>
-        <x>100</x>
-        <y>340</y>
-        <width>80</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Clear</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="execBtn">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>340</y>
-        <width>80</width>
-        <height>26</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-      <property name="styleSheet">
-       <string notr="true"/>
-      </property>
-      <property name="text">
-       <string>Run Code</string>
-      </property>
-      <property name="flat">
-       <bool>false</bool>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_3">
-     <attribute name="title">
-      <string>Debug</string>
-     </attribute>
-     <widget class="QPlainTextEdit" name="plainTextEdit_2">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>20</y>
-        <width>761</width>
-        <height>341</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgb(35, 35, 35);
-color: rgb(255, 255, 255);
-border-color: rgb(255, 255, 255);</string>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-      <property name="plainText">
-       <string/>
-      </property>
-      <property name="placeholderText">
-       <string>Write into tf2 root/Executor/debug.txt</string>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_4">
-     <attribute name="title">
-      <string>Online Repo</string>
-     </attribute>
-     <widget class="QScrollArea" name="scrollArea">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>20</y>
-        <width>761</width>
-        <height>341</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">border-color: rgba(191, 64, 64, 0);</string>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="scrollAreaWidgetContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>759</width>
-         <height>339</height>
-        </rect>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout"/>
-      </widget>
-     </widget>
-    </widget>
-   </widget>
+      <item>
+       <widget class="QPushButton" name="execBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="text">
+         <string>Run Code</string>
+        </property>
+        <property name="flat">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="clearBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Clear</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="saveBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Save File</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>792</width>
-     <height>23</height>
+     <width>762</width>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

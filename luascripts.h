@@ -4,7 +4,8 @@
 #include <QString>
 
 namespace Lua {
-    QString Env = R"(local function outputToConsole(...)
+    QString Env = R"(
+local function outputToConsole(...)
     local console <close> = io.open('Executor/console.txt', 'a+')
     if console then
         console:setvbuf('no')
@@ -42,6 +43,7 @@ local function warn(...)
         end
     end
 end
+
 )";
 
 QString GetMenuCode = QString(R"(local value = gui.GetValue("%1")

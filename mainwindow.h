@@ -36,7 +36,5 @@ private:
     Ui::MainWindow *ui;
     QString tfRootFolder = "";
     QString listViewLoadedFolder = "";
-    QNetworkAccessManager *manager = nullptr;
-    QNetworkRequest request;
 };
 #endif // MAINWINDOW_H
