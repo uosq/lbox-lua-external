@@ -32,6 +32,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
         consolesyntaxhighlight.h consolesyntaxhighlight.cpp
         luascripts.h
+        firststartup.h firststartup.cpp firststartup.ui
+
 
 
 

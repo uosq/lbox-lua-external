@@ -12,6 +12,8 @@
 #include <QThread>
 #include <QFileSystemWatcher>
 #include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QTcpServer>
+#include <QtNetwork/QTcpSocket>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -24,9 +26,12 @@
 #include <QLabel>
 #include <QFileSystemModel>
 
+#include "firststartup.h"
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , httpServer(new QTcpServer(this))
 {
     setWindowFlag(Qt::WindowStaysOnTopHint, true);
     ui->setupUi(this);
@@ -35,6 +40,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     AppendConsole("Startup\n", QColor(100, 100, 255));
     AppendConsole("Will try to load previous data\n");
+
+    // Start HTTP server
+    setupHttpServer();
 
     QFile settingsFile("settings.txt");
     if (settingsFile.exists() && settingsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -55,26 +63,10 @@ MainWindow::MainWindow(QWidget *parent)
         AppendConsole("User has no previous data saved", QColor(220, 20, 60));
         AppendConsole(", will ask for root folder\n", QColor(255, 255, 255));
 
-        QDialog *dialog = new QDialog(this);
-        dialog->setWindowTitle("First Startup");
-        QVBoxLayout *layout = new QVBoxLayout(dialog);
-        layout->addWidget(new QLabel("Please select your TF2's root folder"));
-        layout->addWidget(new QLabel("(The folder that has the file tf_win64.exe)"));
-
-        QPushButton *button = new QPushButton("Select Folder", dialog);
-
-        connect(button, &QPushButton::clicked, this, [this, dialog](void) {
-            QString filePath = QFileDialog::getExistingDirectory(this, tr("Select TF2's Root Folder"));
-            if (!filePath.isEmpty()) {
-                tfRootFolder = filePath;
-                dialog->close();
-            }
-        });
-
-        layout->addWidget(button);
-
-        dialog->setLayout(layout);
-        dialog->exec();
+        FirstStartup startup;
+        startup.exec();
+        tfRootFolder = startup.GetRootFolder();
+        qDebug() << tfRootFolder;
     }
 
     QFileSystemWatcher *watcher1 = new QFileSystemWatcher(this);
@@ -98,7 +90,7 @@ MainWindow::MainWindow(QWidget *parent)
                     }
 
                     if (!lastLine.isEmpty()) {
-                        AppendConsole(lastLine);
+                        AppendConsole(lastLine + "\n");
                     }
                     file.close();
                 }
@@ -109,9 +101,27 @@ MainWindow::MainWindow(QWidget *parent)
                 }
             });
 
+    // watch realtime.txt
+    QFileSystemWatcher *watcher2 = new QFileSystemWatcher(this);
+    QString realtimePath = tfRootFolder + "/Executor/realtime.txt";
+    watcher2->addPath(realtimePath);
+    connect(watcher2, &QFileSystemWatcher::fileChanged,
+            this, [this, realtimePath, watcher2]() {
+                // Read only the last line of the file
+                QFile file(realtimePath);
+                if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    QTextStream in(&file);
+                    ui->realTimeTextEdit->setPlainText(in.readAll());
+                    file.close();
+                }
+
+                // QFileSystemWatcher sometimes stops after a change, re-add the file
+                if (!watcher2->files().contains(realtimePath)) {
+                    watcher2->addPath(realtimePath);
+                }
+            });
 
     AppendConsole("Ready!\n", QColor(0, 255, 174));
-    AppendConsole("You can run code now :)\n", QColor(255, 255, 255));
 }
 
 MainWindow::~MainWindow()
@@ -124,7 +134,103 @@ MainWindow::~MainWindow()
         settingsFile.close();
     }
 
+    QFile console(tfRootFolder + "/Executor/console.txt");
+    if (console.exists() && console.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&console);
+        out << "";
+        console.close();
+    }
+
     delete ui;
+}
+
+void MainWindow::setupHttpServer()
+{
+    const quint16 port = 8080;
+
+    if (!httpServer->listen(QHostAddress::LocalHost, port)) {
+        AppendConsole(QString("Failed to start HTTP server on port %1: %2\n")
+                          .arg(port).arg(httpServer->errorString()), QColor(255, 0, 0));
+        return;
+    }
+
+    connect(httpServer, &QTcpServer::newConnection, this, &MainWindow::handleNewConnection);
+
+    //AppendConsole(QString("HTTP server started on http://localhost:%1\n").arg(port), QColor(0, 255, 0));
+}
+
+void MainWindow::handleNewConnection()
+{
+    QTcpSocket *clientSocket = httpServer->nextPendingConnection();
+    connect(clientSocket, &QTcpSocket::readyRead, this, [this, clientSocket]() {
+        handleHttpRequest(clientSocket);
+    });
+    connect(clientSocket, &QTcpSocket::disconnected, clientSocket, &QTcpSocket::deleteLater);
+}
+
+void MainWindow::handleHttpRequest(QTcpSocket *socket)
+{
+    QByteArray requestData = socket->readAll();
+    QString request = QString::fromUtf8(requestData);
+
+    // Parse the HTTP request
+    QStringList lines = request.split("\r\n");
+    if (lines.isEmpty()) {
+        socket->close();
+        return;
+    }
+
+    QString requestLine = lines.first();
+    QStringList requestParts = requestLine.split(" ");
+
+    if (requestParts.size() < 2) {
+        socket->close();
+        return;
+    }
+
+    QString method = requestParts[0];
+
+    //AppendConsole(QString("HTTP %1 %2\n").arg(method, path), QColor(200, 200, 200));
+
+    // Only handle GET requests, return current script text
+    if (method == "GET") {
+        sendScriptResponse(socket);
+    } else {
+        sendMethodNotAllowedResponse(socket);
+    }
+}
+
+void MainWindow::sendScriptResponse(QTcpSocket *socket)
+{
+    QByteArray scriptData = script.toUtf8();
+
+    QString response = QString(
+                           "HTTP/1.1 200 OK\r\n"
+                           "Content-Type: text/plain; charset=utf-8\r\n"
+                           "Content-Length: %1\r\n"
+                           "\r\n"
+                           ).arg(Lua::Env.length() + scriptData.length());
+
+    socket->write(response.toUtf8());
+    socket->write(Lua::Env.toUtf8());
+    socket->write(scriptData);
+    socket->close();
+
+    script.clear();
+    //qDebug() << "sent!";
+}
+
+void MainWindow::sendMethodNotAllowedResponse(QTcpSocket *socket)
+{
+    QString response =
+        "HTTP/1.1 405 Method Not Allowed\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: 18\r\n"
+        "\r\n"
+        "Method Not Allowed";
+
+    socket->write(response.toUtf8());
+    socket->close();
 }
 
 void MainWindow::on_execBtn_clicked() {
@@ -226,6 +332,9 @@ void MainWindow::on_listView_clicked(const QModelIndex &index) {
 
 void MainWindow::on_actionSet_TF2_Root_Folder_triggered() {
     QString folderPath = QFileDialog::getExistingDirectory(this, tr("Select TF2's Root Folder"));
+    if (folderPath.isEmpty())
+        return;
+
     tfRootFolder = folderPath;
 }
 
@@ -242,45 +351,7 @@ void MainWindow::on_saveBtn_clicked() {
 }
 
 void MainWindow::Execute(const QString &text) {
-    AppendConsole("Running code...\n");
-
-    if (tfRootFolder.isEmpty()) {
-        QMessageBox::critical(this, "Error!", tr("You have to select a root folder!\nFile -> Set TF2 Root Folder"));
-        AppendConsole("Error! You didn't select a root folder!\n");
-        return;
-    }
-
-    // Create the Scripts directory if it doesn't exist
-    QString scriptsDir = tfRootFolder + "/Executor/Scripts";
-    QDir dir;
-    if (!dir.exists(scriptsDir)) {
-        if (!dir.mkpath(scriptsDir)) {
-            QMessageBox::critical(this, "Error!", tr("Failed to create Scripts directory!"));
-            AppendConsole("Error! Failed to create Scripts directory!\n");
-            return;
-        }
-    }
-
-    // Find the next available script number
-    int scriptNumber = 0;
-    QString fileName;
-    do {
-        fileName = QString("%1/script-%2.lua").arg(scriptsDir).arg(scriptNumber);
-        scriptNumber++;
-    } while (QFile::exists(fileName));
-
-    // Create and write to the new script file
-    QFile file(fileName);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&file);
-        out << Lua::Env << "\n" << text;
-        file.close();
-
-        AppendConsole(QString("Code executed!\n"));
-    } else {
-        QMessageBox::critical(this, "Error!", tr("Failed to create script file!"));
-        AppendConsole("Error! Failed to create script file!\n");
-    }
+    script = text;
 }
 
 void MainWindow::GetMenuInt(const QString &text, std::function<void(int)> callback) {
@@ -334,8 +405,4 @@ void MainWindow::AppendConsole(const QString &text, QColor color) {
     QTextCursor cursor(ui->console->document());
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(text, format);
-
-    QTextCharFormat resetFormat;
-    resetFormat.setForeground(ui->console->palette().color(QPalette::Text));
-    cursor.setCharFormat(resetFormat);
 }

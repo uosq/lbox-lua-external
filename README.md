@@ -4,11 +4,14 @@
 
 ---
 
+If you want beta version [go here](https://github.com/uosq/lbox-lua-external/releases/tag/nightly)
+
+If you want latest stable version [go here](https://github.com/uosq/lbox-lua-external/releases/latest)
+
 ### Requirements
 
 Runtime requirements:
 
-+ QT5/6
 + Lmaobox with helper script loaded
 
 ---
@@ -21,9 +24,12 @@ Build requirements:
 Build instructions:
 
 ```sh
+# clone the repo
 git clone https://github.com/uosq/lbox-lua-external.git
+# go to the project folder
 cd lbox-lua-external
+# make the build directory
 mkdir build
-mkdir build/Desktop-Release
-cmake --build build/Desktop-Release --target all
+# build the project
+cmake --build build/
 ```

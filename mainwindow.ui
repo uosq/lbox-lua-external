@@ -87,7 +87,7 @@
 color: rgb(255, 255, 255);</string>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -284,6 +284,30 @@ color: rgb(255, 255, 255);</string>
           </item>
          </layout>
         </widget>
+        <widget class="QWidget" name="tab_3">
+         <attribute name="title">
+          <string>Realtime</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QPlainTextEdit" name="realTimeTextEdit">
+            <property name="contextMenuPolicy">
+             <enum>Qt::ContextMenuPolicy::DefaultContextMenu</enum>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">background-color: rgb(33, 33, 33);
+color: rgb(255, 255, 255);</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+            <property name="placeholderText">
+             <string>Write to Executor/realtime.txt</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </item>
      </layout>
@@ -306,7 +330,9 @@ selection-background-color: rgb(26, 26, 26);</string>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="styleSheet">
-     <string notr="true"/>
+     <string notr="true">background-color: rgb(33, 33, 33);
+color: rgb(255, 255, 255);
+selection-background-color: rgb(26, 26, 26);</string>
     </property>
     <property name="title">
      <string>File</string>
