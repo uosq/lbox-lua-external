@@ -32,14 +32,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # ---- Cache Qt ----
-    - name: Cache Qt
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/Qt
-        key: qt-${{ runner.os }}-v4.3.0
-        restore-keys: qt-${{ runner.os }}-
-
     - uses: jurplel/install-qt-action@v4.3.0
 
     - name: Set reusable strings
@@ -118,8 +110,10 @@ jobs:
             exit 1
         }
         Copy-Item "${{ github.workspace }}\runner-helper.lua" (Split-Path $exePath)
-        mkdir output
-        Copy-Item -Recurse (Split-Path $exePath)/* output/
+        New-Item -ItemType Directory -Force -Path output | Out-Null
+        $srcDir = Split-Path $exePath
+        Copy-Item -Recurse -Path (Join-Path $srcDir '*') -Destination output -Force
+
 
     # ---- Upload artifacts (not zipped!) ----
     - uses: actions/upload-artifact@v4
