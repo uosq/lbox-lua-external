@@ -125,6 +125,8 @@ jobs:
     if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -149,7 +151,7 @@ jobs:
           tag_name: nightly
           name: "Nightly Build"
           prerelease: true
-          overwrite: true
+          overwrite_files: true
           files: |
             LuaRunner-linux.zip
             LuaRunner-windows.zip
