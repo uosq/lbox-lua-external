@@ -64,7 +64,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install -y imagemagick
 
-    # ---- Linux: Package AppImage + strip + zip ----
+    # ---- Linux: Package AppImage ----
     - name: Package AppImage
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -100,11 +100,11 @@ jobs:
           --plugin qt \
           --output appimage
 
-        ZIP_PATH="${{ github.workspace }}/LuaRunner-linux.zip"
-        zip -j "$ZIP_PATH" "LuaRunner-x86_64.AppImage" "${{ github.workspace }}/runner-helper.lua"
-        echo "Created $ZIP_PATH"
+        mkdir -p output
+        cp LuaRunner-x86_64.AppImage output/
+        cp ${{ github.workspace }}/runner-helper.lua output/
 
-    # ---- Windows: Deploy Qt + zip ----
+    # ---- Windows: Deploy Qt ----
     - name: Deploy Qt (Windows)
       if: matrix.os == 'windows-latest'
       shell: pwsh
@@ -117,19 +117,48 @@ jobs:
             Write-Error "Platforms directory not created by windeployqt"
             exit 1
         }
-        Write-Output "Contents of platforms directory:"
-        Get-ChildItem $platformsDir
         Copy-Item "${{ github.workspace }}\runner-helper.lua" (Split-Path $exePath)
-        $zipPath = "${{ github.workspace }}\LuaRunner-windows.zip"
-        $deployDir = Split-Path $exePath
-        $files = Get-ChildItem -Path $deployDir -Recurse
-        Compress-Archive -Path $files.FullName -DestinationPath $zipPath -Force
-        Write-Output "Created $zipPath"
+        mkdir output
+        Copy-Item -Recurse (Split-Path $exePath)/* output/
 
-    # ---- Upload artifacts ----
+    # ---- Upload artifacts (not zipped!) ----
     - uses: actions/upload-artifact@v4
       with:
         name: LuaRunner-${{ matrix.os }}
-        path: |
-          ${{ github.workspace }}/LuaRunner-linux.zip
-          ${{ github.workspace }}/LuaRunner-windows.zip
+        path: output/*
+
+  release:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Zip Linux build
+        run: |
+          cd artifacts/LuaRunner-ubuntu-latest
+          zip -r ../../LuaRunner-linux.zip .
+          cd ../../
+
+      - name: Zip Windows build
+        run: |
+          cd artifacts/LuaRunner-windows-latest
+          zip -r ../../LuaRunner-windows.zip .
+          cd ../../
+
+      - name: Create/Update GitHub Pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Nightly Build"
+          prerelease: true
+          overwrite: true
+          files: |
+            LuaRunner-linux.zip
+            LuaRunner-windows.zip
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
