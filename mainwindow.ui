@@ -87,7 +87,7 @@
 color: rgb(255, 255, 255);</string>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -302,8 +302,33 @@ color: rgb(255, 255, 255);</string>
              <bool>true</bool>
             </property>
             <property name="placeholderText">
-             <string>Write to Executor/realtime.txt</string>
+             <string>Send text to http://localhost:8080/setrealtime=text to display here</string>
             </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tab_4">
+         <attribute name="title">
+          <string>Callbacks</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QScrollArea" name="scrollArea">
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="scrollAreaWidgetContents">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>718</width>
+               <height>414</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_6"/>
+            </widget>
            </widget>
           </item>
          </layout>

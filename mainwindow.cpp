@@ -189,12 +189,124 @@ void MainWindow::handleHttpRequest(QTcpSocket *socket)
     }
 
     QString method = requestParts[0];
+    QString path = requestParts[1];
 
     //AppendConsole(QString("HTTP %1 %2\n").arg(method, path), QColor(200, 200, 200));
 
     // Only handle GET requests, return current script text
+    // GET -> /getcurrentscript -> return script text
+    // GET -> /setrealtime=cooltextwewanttodisplay -> set realtimeTextEdit's plain text to everything after /setrealtime=
+    // GET -> /appendconsole=cooltexttodisplay -> set console's plain text to everything after /setconsole
     if (method == "GET") {
-        sendScriptResponse(socket);
+        if (path.startsWith("/getcurrentscript"))
+            sendScriptResponse(socket);
+        else if (path.startsWith("/setrealtime=")) {
+            QString encodedText = path.mid(QString("/setrealtime=").length());
+
+            // make spaces, newlines, etc work fine
+            QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
+
+            // Update the QTextEdit
+            ui->realTimeTextEdit->setPlainText(QString::fromUtf8(byteArray));
+
+            QByteArray response =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain; charset=utf-8\r\n"
+                "Content-Length: 2\r\n"
+                "\r\n"
+                "OK";
+
+            socket->write(response);
+            socket->flush();
+            socket->close();
+        } else if (path.startsWith("/appendconsole=")) {
+            QString encodedText = path.mid(QString("/appendconsole=").length());
+
+            // make spaces, newlines, etc work fine
+            QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
+
+            // Update the console
+            AppendConsole(byteArray + "\n");
+
+            QByteArray response =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain; charset=utf-8\r\n"
+                "Content-Length: 2\r\n"
+                "\r\n"
+                "OK";
+
+            socket->write(response);
+            socket->flush();
+            socket->close();
+        } else if (path.startsWith("/setcallbacklist=")) {
+            QByteArray response =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain; charset=utf-8\r\n"
+                "Content-Length: 2\r\n"
+                "\r\n"
+                "OK";
+
+            socket->write(response);
+            socket->flush();
+            socket->close();
+
+            QString encodedJson = path.mid(QString("/setcallbacklist=").length());
+
+            // Decode percent encoding
+            QByteArray byteArray = QByteArray::fromPercentEncoding(encodedJson.toUtf8());
+            QString jsonStr = QString::fromUtf8(byteArray);
+
+            // Parse JSON
+            QJsonParseError parseError;
+            QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8(), &parseError);
+
+            if (parseError.error != QJsonParseError::NoError) {
+                AppendConsole(QString("Failed to parse callback list JSON: %1\n").arg(parseError.errorString()), QColor(255,0,0));
+            } else if (doc.isArray()) {
+                QJsonArray arr = doc.array();
+
+                // Access the scroll area contents
+                QWidget *container = ui->scrollArea->widget(); // scrollAreaWidgetContents
+                if (!container) {
+                    container = new QWidget(ui->scrollArea);
+                    ui->scrollArea->setWidget(container);
+                }
+
+                QVBoxLayout *layout = qobject_cast<QVBoxLayout*>(container->layout());
+                if (!layout) {
+                    layout = new QVBoxLayout(container);
+                    container->setLayout(layout);
+                }
+
+                // Clear previous buttons
+                QLayoutItem *child;
+                while ((child = layout->takeAt(0)) != nullptr) {
+                    delete child->widget();
+                    delete child;
+                }
+
+                // Add new buttons
+                for (auto value : std::as_const(arr)) {
+                    if (!value.isObject()) continue;
+
+                    QJsonObject obj = value.toObject();
+                    QString callbackType = obj["callback"].toString();
+                    QString callbackName = obj["name"].toString();
+
+                    QPushButton *btn = new QPushButton("Type: " + callbackType + " | Name: " + callbackName, container);
+
+                    connect(btn, &QPushButton::clicked, this, [this, callbackType, callbackName]() {
+                        QString code = QString("callbacks.Unregister('%1', '%2')").arg(callbackType, callbackName);
+                        Execute(code);
+                    });
+
+                    layout->addWidget(btn);
+                }
+
+                // Ensure scroll area updates
+                container->adjustSize();
+            }
+        }
     } else {
         sendMethodNotAllowedResponse(socket);
     }
@@ -209,10 +321,9 @@ void MainWindow::sendScriptResponse(QTcpSocket *socket)
                            "Content-Type: text/plain; charset=utf-8\r\n"
                            "Content-Length: %1\r\n"
                            "\r\n"
-                           ).arg(Lua::Env.length() + scriptData.length());
+                           ).arg(scriptData.length());
 
     socket->write(response.toUtf8());
-    socket->write(Lua::Env.toUtf8());
     socket->write(scriptData);
     socket->close();
 
