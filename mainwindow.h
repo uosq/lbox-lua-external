@@ -52,7 +52,7 @@ private:
 
     void sendScriptResponse(QTcpSocket *socket);
     void setRealtimeText(QTcpSocket *socket, const QString &path);
-    void runSetAppendConsole(QTcpSocket *socket, const QString &path);
+    void runSetAppendConsole(QTcpSocket *socket, const QString &path, QColor color = QColor(255, 255, 255));
 
     void LoadListFolder();
 };

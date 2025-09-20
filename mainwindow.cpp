@@ -202,6 +202,38 @@ void MainWindow::handleHttpRequest(QTcpSocket *socket)
             setRealtimeText(socket, path);
         } else if (path.startsWith("/appendconsole=")) {
             runSetAppendConsole(socket, path);
+        } else if (path.startsWith("/appendconsolecolor=")) {
+            // we receive a path like this: "/appendconsolecolor=255255255texthere" or "/appendconsolecolor=255093235texthere"
+            QString encoded = path.mid(QString("/appendconsolecolor=").length());
+
+            if (encoded.length() >= 9) {
+                // Extract RGB (assumes always 3 digits each, e.g. "255093235")
+                bool okR, okG, okB, okA;
+                // no Qt, im NOT using midRef (it doesn't exist)
+                int r = encoded.mid(0, 3).toInt(&okR);
+                int g = encoded.mid(3, 3).toInt(&okG);
+                int b = encoded.mid(6, 3).toInt(&okB);
+                int a = encoded.mid(9, 3).toInt(&okA);
+
+                QString encodedText = encoded.mid(12);
+
+                QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
+
+                QColor color = (okR && okG && okB && okA) ? QColor(r, g, b, a) : QColor(255, 255, 255);
+
+                AppendConsole(QString::fromUtf8(byteArray) + "\n", color);
+            }
+
+            QByteArray response =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain; charset=utf-8\r\n"
+                "Content-Length: 2\r\n"
+                "\r\n"
+                "OK";
+
+            socket->write(response);
+            socket->flush();
+            socket->close();
         } else if (path.startsWith("/setcallbacklist=")) {
             QString encodedJson = path.mid(QString("/setcallbacklist=").length());
 
@@ -279,14 +311,14 @@ void MainWindow::handleHttpRequest(QTcpSocket *socket)
     }
 }
 
-void MainWindow::runSetAppendConsole(QTcpSocket *socket, const QString &path) {
+void MainWindow::runSetAppendConsole(QTcpSocket *socket, const QString &path, QColor color) {
     QString encodedText = path.mid(QString("/appendconsole=").length());
 
     // make spaces, newlines, etc work fine
     QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
 
     // Update the console
-    AppendConsole(byteArray + "\n");
+    AppendConsole(byteArray + "\n", color);
 
     QByteArray response =
         "HTTP/1.1 200 OK\r\n"

@@ -38,6 +38,88 @@ local function customPrint(...)
     http.Get(string.format("http://localhost:8080/appendconsole=%s", textencode(text)))
 end
 
+local function customPrintColored(r, g, b, a, ...)
+    local text = ""
+    local args = {...}
+    local len = #args
+
+    for i = 1, len do
+        local str = tostring(args[i])
+        if (i > 1) then -- not the first element?
+            str = "\t".. str -- add a "tab" before it
+        end
+
+        text = text .. str
+
+        --- this part is not on the official Lua source code
+        --- but i dont want gaps in the console
+        if (len ~= i) then -- last element?
+            text = text .. "\n"
+        end
+    end
+
+    if (r > 255) then
+        r = 255
+    elseif (r < 0) then
+        r = 0
+    end
+
+    if (g > 255) then
+        g = 255
+    elseif (g < 0) then
+        g = 0
+    end
+
+    if (b > 255) then
+        b = 255
+    elseif (b < 0) then
+        b = 0
+    end
+
+    r = tostring(r)
+    g = tostring(g)
+    b = tostring(b)
+    a = tostring(a)
+
+    if (#r < 3) then
+        local charcount = #r
+        local amount_to_3 = 3 - charcount
+        while (amount_to_3 ~= 0) do
+            r = "0" .. r
+            amount_to_3 = amount_to_3 - 1
+        end
+    end
+
+    if (#g < 3) then
+        local charcount = #g
+        local amount_to_3 = 3 - charcount
+        while (amount_to_3 ~= 0) do
+            g = "0" .. g
+            amount_to_3 = amount_to_3 - 1
+        end
+    end
+
+    if (#b < 3) then
+        local charcount = #b
+        local amount_to_3 = 3 - charcount
+        while (amount_to_3 ~= 0) do
+            b = "0" .. b
+            amount_to_3 = amount_to_3 - 1
+        end
+    end
+
+    if (#a < 3) then
+        local charcount = #a
+        local amount_to_3 = 3 - charcount
+        while (amount_to_3 ~= 0) do
+            a = "0" .. a
+            amount_to_3 = amount_to_3 - 1
+        end
+    end
+
+    http.Get(string.format("http://localhost:8080/appendconsolecolor=%s%s%s%s%s", r, g, b, a, textencode(text)))
+end
+
 local function customWarn(...)
     local args = {...}
     local text = ""
@@ -80,6 +162,7 @@ env.SetRealtimeText = SetRealtimeText
 env.print = customPrint
 env.error = customError
 env.warn = customWarn
+env.printc = customPrintColored
 
 env.__sendcallbacklist = SendCallbackList
 env.__origRegister = callbacks.Register
