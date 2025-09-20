@@ -82,12 +82,15 @@
       </property>
       <item>
        <widget class="QTabWidget" name="tabWidget">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="styleSheet">
          <string notr="true">background-color: rgb(40, 40, 40);
 color: rgb(255, 255, 255);</string>
         </property>
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab">
          <attribute name="title">
@@ -109,6 +112,9 @@ border-color: rgb(62, 62, 62);</string>
             </property>
             <property name="readOnly">
              <bool>true</bool>
+            </property>
+            <property name="tabStopDistance">
+             <double>20.000000000000000</double>
             </property>
             <property name="placeholderText">
              <string>Console</string>
@@ -302,13 +308,16 @@ color: rgb(255, 255, 255);</string>
              <bool>true</bool>
             </property>
             <property name="placeholderText">
-             <string>Send text to http://localhost:8080/setrealtime=text to display here</string>
+             <string>Send text to http://localhost:8080/setrealtime=text to display here (or use SetRealtimeText(&quot;text here&quot;))</string>
             </property>
            </widget>
           </item>
          </layout>
         </widget>
         <widget class="QWidget" name="tab_4">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
          <attribute name="title">
           <string>Callbacks</string>
          </attribute>

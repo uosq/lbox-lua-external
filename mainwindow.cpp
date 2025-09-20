@@ -66,7 +66,6 @@ MainWindow::MainWindow(QWidget *parent)
         FirstStartup startup;
         startup.exec();
         tfRootFolder = startup.GetRootFolder();
-        qDebug() << tfRootFolder;
     }
 
     QFileSystemWatcher *watcher1 = new QFileSystemWatcher(this);
@@ -193,7 +192,6 @@ void MainWindow::handleHttpRequest(QTcpSocket *socket)
 
     //AppendConsole(QString("HTTP %1 %2\n").arg(method, path), QColor(200, 200, 200));
 
-    // Only handle GET requests, return current script text
     // GET -> /getcurrentscript -> return script text
     // GET -> /setrealtime=cooltextwewanttodisplay -> set realtimeTextEdit's plain text to everything after /setrealtime=
     // GET -> /appendconsole=cooltexttodisplay -> set console's plain text to everything after /setconsole
@@ -201,55 +199,10 @@ void MainWindow::handleHttpRequest(QTcpSocket *socket)
         if (path.startsWith("/getcurrentscript"))
             sendScriptResponse(socket);
         else if (path.startsWith("/setrealtime=")) {
-            QString encodedText = path.mid(QString("/setrealtime=").length());
-
-            // make spaces, newlines, etc work fine
-            QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
-
-            // Update the QTextEdit
-            ui->realTimeTextEdit->setPlainText(QString::fromUtf8(byteArray));
-
-            QByteArray response =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/plain; charset=utf-8\r\n"
-                "Content-Length: 2\r\n"
-                "\r\n"
-                "OK";
-
-            socket->write(response);
-            socket->flush();
-            socket->close();
+            setRealtimeText(socket, path);
         } else if (path.startsWith("/appendconsole=")) {
-            QString encodedText = path.mid(QString("/appendconsole=").length());
-
-            // make spaces, newlines, etc work fine
-            QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
-
-            // Update the console
-            AppendConsole(byteArray + "\n");
-
-            QByteArray response =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/plain; charset=utf-8\r\n"
-                "Content-Length: 2\r\n"
-                "\r\n"
-                "OK";
-
-            socket->write(response);
-            socket->flush();
-            socket->close();
+            runSetAppendConsole(socket, path);
         } else if (path.startsWith("/setcallbacklist=")) {
-            QByteArray response =
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/plain; charset=utf-8\r\n"
-                "Content-Length: 2\r\n"
-                "\r\n"
-                "OK";
-
-            socket->write(response);
-            socket->flush();
-            socket->close();
-
             QString encodedJson = path.mid(QString("/setcallbacklist=").length());
 
             // Decode percent encoding
@@ -292,12 +245,15 @@ void MainWindow::handleHttpRequest(QTcpSocket *socket)
                     QJsonObject obj = value.toObject();
                     QString callbackType = obj["callback"].toString();
                     QString callbackName = obj["name"].toString();
+                    qDebug() << callbackType << callbackName;
 
-                    QPushButton *btn = new QPushButton("Type: " + callbackType + " | Name: " + callbackName, container);
+                    QPushButton *btn = new QPushButton(callbackType + ": " + callbackName, container);
 
+                    // Capture callbackType and callbackName for the lambda
                     connect(btn, &QPushButton::clicked, this, [this, callbackType, callbackName]() {
                         QString code = QString("callbacks.Unregister('%1', '%2')").arg(callbackType, callbackName);
                         Execute(code);
+                        AppendConsole(QString("Executed: %1\n").arg(code), QColor(0,200,255));
                     });
 
                     layout->addWidget(btn);
@@ -306,16 +262,70 @@ void MainWindow::handleHttpRequest(QTcpSocket *socket)
                 // Ensure scroll area updates
                 container->adjustSize();
             }
+
+            QByteArray response =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain; charset=utf-8\r\n"
+                "Content-Length: 2\r\n"
+                "\r\n"
+                "OK";
+
+            socket->write(response);
+            socket->flush();
+            socket->close();
         }
     } else {
         sendMethodNotAllowedResponse(socket);
     }
 }
 
+void MainWindow::runSetAppendConsole(QTcpSocket *socket, const QString &path) {
+    QString encodedText = path.mid(QString("/appendconsole=").length());
+
+    // make spaces, newlines, etc work fine
+    QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
+
+    // Update the console
+    AppendConsole(byteArray + "\n");
+
+    QByteArray response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "Content-Length: 2\r\n"
+        "\r\n"
+        "OK";
+
+    socket->write(response);
+    socket->flush();
+    socket->close();
+}
+
+void MainWindow::setRealtimeText(QTcpSocket *socket, const QString &path) {
+    QString encodedText = path.mid(QString("/setrealtime=").length());
+
+    // make spaces, newlines, etc work fine
+    QByteArray byteArray = QByteArray::fromPercentEncoding(encodedText.toUtf8());
+
+    // Update the QTextEdit
+    ui->realTimeTextEdit->setPlainText(QString::fromUtf8(byteArray));
+
+    QByteArray response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/plain; charset=utf-8\r\n"
+        "Content-Length: 2\r\n"
+        "\r\n"
+        "OK";
+
+    socket->write(response);
+    socket->flush();
+    socket->close();
+}
+
 void MainWindow::sendScriptResponse(QTcpSocket *socket)
 {
     QByteArray scriptData = script.toUtf8();
 
+    // not having this header makes the entire game freeze waiting for it
     QString response = QString(
                            "HTTP/1.1 200 OK\r\n"
                            "Content-Type: text/plain; charset=utf-8\r\n"

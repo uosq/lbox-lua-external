@@ -48,8 +48,11 @@ private:
     // HTTP Server methods
     void setupHttpServer();
     void handleHttpRequest(QTcpSocket *socket);
-    void sendScriptResponse(QTcpSocket *socket);
     void sendMethodNotAllowedResponse(QTcpSocket *socket);
+
+    void sendScriptResponse(QTcpSocket *socket);
+    void setRealtimeText(QTcpSocket *socket, const QString &path);
+    void runSetAppendConsole(QTcpSocket *socket, const QString &path);
 
     void LoadListFolder();
 };

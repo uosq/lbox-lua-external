@@ -1,149 +1,169 @@
 --- made by navet
 --- helper script for Lua Runner
 
-local json = load(http.Get("https://raw.githubusercontent.com/LuaDist/dkjson/refs/heads/master/dkjson.lua"))()
-assert(json, "JSON is nil!")
-
-local callbackCounter = 0
+local json = load(http.Get("https://dkolf.de/dkjson-lua/dkjson-2.8.lua"))()
+assert(type(json) == "table", "JSON is not a table!")
 
 local function textencode(str)
-    return (str:gsub('([^%w%-_%.~])', function(c)
-        return string.format('%%%02X', string.byte(c))
+    return (str:gsub("([^%w%-_%.~])", function(c)
+        return string.format("%%%02X", string.byte(c))
     end))
 end
 
-local env = _ENV
-
-env.outputToConsole = function(...)
-    local text = table.concat({...}, "\n")
-    local encoded = textencode(text)
-    http.Get(string.format("http://localhost:8080/appendconsole=%s", encoded))
-end
-
-env.print = function(...)
-    local args = {...}
-
-    for i = 1, #args do
-        if (args[i]) then
-            outputToConsole(string.format('[Print] %s', tostring(args[i])))
-        end
-    end
-end
-
-env.error = function(...)
-    local args = {...}
-    for i = 1, #args do
-        if (args[i]) then
-            outputToConsole(string.format('[Error] %s', tostring(args[i])))
-        end
-    end
-end
-
-env.warn = function(...)
-    local args = {...}
-    for i = 1, #args do
-        if (args[i]) then
-            outputToConsole(string.format('[Warn] %s', tostring(args[i])))
-        end
-    end
-end
-
-env.SetRealtimeText = function(str)
+local function SetRealtimeText(str)
     local encoded = textencode(str)
     http.Get(string.format("http://localhost:8080/setrealtime=%s", encoded))
 end
 
-local origRegister = callbacks.Register
-local origUnregister = callbacks.Unregister
+local function customPrint(...)
+    local text = ""
+    local args = {...}
+    local len = #args
 
-local callbackList = {}
+    for i = 1, len do
+        local str = tostring(args[i])
+        if (i > 1) then -- not the first element?
+            str = "\t".. str -- add a "tab" before it
+        end
 
-local function sendCallbackList()
-    local list = {}
-    for _, call in ipairs(callbackList) do
-        table.insert(list, {callback = call[1], name = call[2]})
+        text = text .. str
+
+        --- this part is not on the official Lua source code
+        --- but i dont want gaps in the console
+        if (len ~= i) then -- last element?
+            text = text .. "\n"
+        end
     end
-    http.Get(string.format("http://localhost:8080/setcallbacklist=%s", textencode(json.encode(list))))
+
+    http.Get(string.format("http://localhost:8080/appendconsole=%s", textencode(text)))
 end
 
-env.callbacks = {
-    Register = function(...)
-        local args = {...}
-        local callback = tostring(args[1])
-        if (not callback or callback == "nil") then
-            error("Invalid callback name!")
+local function customWarn(...)
+    local args = {...}
+    local text = ""
+
+    for i = 1, #args do
+        text = text .. "[Warn] " .. tostring(args[i])
+        if (#args ~= i) then -- last element?
+            text = text .. "\n"
+        end
+        http.Get(string.format("http://localhost:8080/appendconsole=%s", textencode(text)))
+    end
+end
+
+---@param message string
+---@param level integer?
+local function customError(message, level)
+    level = level or 0
+
+    if (level > 0) then
+        local info = debug.getinfo(2)
+        --- lua src code uses lua_where but currentline should work fine
+        message = string.format("Line: %i | %s", info.currentline, message)
+    end
+
+    http.Get(string.format("http://localhost:8080/appendconsole=%s", textencode("[Error] " .. message)))
+    return message
+end
+
+local function SendCallbackList(list)
+    local encoded = json.encode(list)
+    assert(encoded or type(encoded) ~= "string", "Encoded callback list is wrong!")
+    http.Get(string.format("http://localhost:8080/setcallbacklist=%s", encoded))
+end
+
+local env = {}
+setmetatable(env, {__index = _ENV})
+
+env.textencode = textencode
+env.SetRealtimeText = SetRealtimeText
+env.print = customPrint
+env.error = customError
+env.warn = customWarn
+
+env.__sendcallbacklist = SendCallbackList
+env.__origRegister = callbacks.Register
+env.__origUnregister = callbacks.Unregister
+
+env.__callbackList = {}
+env.__callbackCounter = 0
+env.callbacks = {}
+env.callbacks.Register = function(...)
+    local args = {...}
+    local size = #args
+    local callback, func, name
+
+    if (size == 2) then
+        if (args[1] == nil) then error("Argument #1 is nil!") return false end
+        if (args[2] == nil) then error("Argument #2 is nil!") return false end
+
+        callback = tostring(args[1])
+
+        if (#callback == 0) then
+            error("Callback type is empty!")
             return false
         end
 
-        if (#args == 2) then
-            local func = args[2]
-            if (type(func) == "function") then
-                callbackCounter = callbackCounter + 1
-                local newName = tostring(callbackCounter)
+        func = args[2]
+        if (type(func) ~= "function") then error("Callback function is not a function!") return false end
 
-                if (origRegister(callback, newName, func)) then
-                    table.insert(callbackList, {callback, newName})
-                    sendCallbackList()
-                    return true
-                end
-            else
-                error("Argument #2 is not a function!")
-            end
+        env.__callbackCounter = env.__callbackCounter + 1
+        name = string.format("unnamed-%i", env.__callbackCounter)
 
-        elseif (#args == 3) then
-            local name, func
-
-            name = args[2]
-            func = args[3]
-
-            if (name and func) then
-                if (type(name) ~= "string") then
-                    error("Argument #2 is not a string!")
-                    return false
-                end
-
-                if (type(func) ~= "function") then
-                    error("Argument #3 is not a function!")
-                    return false
-                end
-
-                if (origRegister(callback, name, func)) then
-                    table.insert(callbackList, {tostring(callback), tostring(name)})
-                    sendCallbackList()
-                    return true
-                end
-            end
-        else
-            error("Insuficient number of arguments!")
+        if (env.__origRegister(callback, func)) then
+            table.insert(env.__callbackList, {["callback"] = callback, ["name"] = name})
+            env.__sendcallbacklist(env.__callbackList)
+            return true
         end
 
-        return false
-    end,
+    elseif (size == 3) then
+        if (args[1] == nil) then error("Argument #1 is nil!") return false end
+        if (args[2] == nil) then error("Argument #2 is nil!") return false end
+        if (args[3] == nil) then error("Argument #3 is nil!") return false end
 
-    Unregister = function(callback, name)
-        if not (type(callback) == "string") then
-            error("Argument #1 is not a string!")
+        callback = tostring(args[1])
+        if (#callback == 0) then
+            error("Callback type is empty!")
             return false
         end
 
-        if not (type(name) == "string") then
-            error("Argument #2 is not a string!")
+        name = tostring(args[2])
+        if (#name == 0) then
+            error("Callback name is empty!")
             return false
         end
 
-        for i, call in ipairs(callbackList) do
-            if (call[1] == callback and call[2] == name) then
-                if (origUnregister(callback, tostring(name))) then
-                    table.remove(callbackList, i)
-                    sendCallbackList()
-                    return
-                end
-            end
+        func = args[3]
+        if (type(func) ~= "function") then
+            error("Callback function is not a function!")
+            return false
         end
 
+        if (env.__origRegister(callback, name, func)) then
+            table.insert(env.__callbackList, {["callback"] = callback, ["name"] = name})
+            env.__sendcallbacklist(env.__callbackList)
+        end
+    else
+        error("Invalid number of arguments!")
         return false
     end
-}
+
+    return true
+end
+
+env.callbacks.Unregister = function(callback, name)
+    for i, call in ipairs(env.__callbackList) do
+        if (call["callback"] == callback and call["name"] == name) then
+            if (env.__origUnregister(callback, name)) then
+                table.remove(env.__callbackList, i)
+                env.__sendcallbacklist(env.__callbackList)
+                return true
+            end
+        end
+    end
+
+    return false
+end
 
 local function poll()
     local script = http.Get("http://localhost:8080/getcurrentscript")
@@ -153,20 +173,17 @@ local function poll()
             pcall(func)
         else
             error(tostring(err))
-            print(debug.traceback())
         end
     end
 end
 
-if not env._runner_initialized then
-    origRegister("Draw", "LuaRunnerDraw", poll)
-    origRegister("Unload", "LuaRunnerUnload", function()
-        for _, call in ipairs(callbackList) do
-            env.callbacks.Unregister(call[1], call[2])
-        end
-        env.callbacks.Register = origRegister
-        env.callbacks.Unregister = origUnregister
-        env._runner_initialized = nil
-    end)
-    env._runner_initialized = true
-end
+callbacks.Unregister("Draw", "LuaRunnerDraw")
+callbacks.Register("Draw", "LuaRunnerDraw", poll)
+callbacks.Register("Unload", function (...)
+    for i, callback in ipairs(env.__callbackList) do
+        callbacks.Unregister(callback["callback"], callback["name"])
+    end
+
+    env.__callbackList = {}
+    env.__sendcallbacklist(env.__callbackList)
+end)
